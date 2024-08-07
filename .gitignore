@@ -1,0 +1,9 @@
+*.exe
+*.ini
+*.blend1
+
+#Cmake
+CmakeFiles/
+*.cmake
+CmakeCache.txt
+Makefile
