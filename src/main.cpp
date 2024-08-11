@@ -12,6 +12,14 @@
 #define MAP_WIDTH 24
 #define MAP_HEIGHT 24
 
+//Input map
+bool fwrd = 0;
+bool back = 0;
+bool rleft = 0;
+bool rright = 0;
+float playerspeed = 0.05;
+float lookspeed = 0.02;
+
 int worldMap[MAP_WIDTH][MAP_HEIGHT]=
 {
   {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
@@ -91,12 +99,14 @@ bool closeSDL(SDL_Window* window, SDL_Renderer* renderer, SDL_Texture* texture){
 }
 
 
-void calcRay(vect2d player, vect2d rayDir, float* dist, int* target){
+void calcRay(vect2d player, vect2d rayDir, float* dist, int* target, bool* side){
 	vect2d mapTile = vect2d((int)player.x, (int)player.y); //truncate to get start tile. 
 
-	float slopeY = (rayDir.y*rayDir.y)/(rayDir.x*rayDir.x);
-	float deltaX = sqrt(1+(1/slopeY));
-	float deltaY = sqrt(1+slopeY);
+	// float slopeY = (rayDir.y*rayDir.y)/(rayDir.x*rayDir.x);
+	// float deltaX = sqrt(1+(1/slopeY));
+	// float deltaY = sqrt(1+slopeY);
+      double deltaX = (rayDir.x == 0) ? 1e30 : std::abs(1 / rayDir.x);
+      double deltaY = (rayDir.y == 0) ? 1e30 : std::abs(1 / rayDir.y);
 
 	int stepX;
 	int stepY;
@@ -121,10 +131,12 @@ void calcRay(vect2d player, vect2d rayDir, float* dist, int* target){
 	while (worldMap[(int)mapTile.x][(int)mapTile.y] == 0){
 		if(nextX < nextY){  // hits new X tile
 			*dist = nextX;
+			*side = false;
 			nextX += deltaX;
 			mapTile.x += stepX;
 		} else {			// hits new Y tile
 			*dist = nextY;
+			*side = true;
 			nextY += deltaY;
 			mapTile.y += stepY;
 		}
@@ -134,26 +146,37 @@ void calcRay(vect2d player, vect2d rayDir, float* dist, int* target){
 	return;
 }
 
-void setRenderColor(SDL_Renderer* renderer, int color){
+void setRenderColor(SDL_Renderer* renderer, int color, bool side = false){
 	switch (color)
 	{
 	case 0:
 		SDL_SetRenderDrawColor(renderer, 0,0,0,255);
 		break;
 	case 1:
-		SDL_SetRenderDrawColor(renderer, 0,0,255,255);
+		SDL_SetRenderDrawColor(renderer, 0,0,255-(side*100),255);
 		break;
 	case 2:
-		SDL_SetRenderDrawColor(renderer, 255,0,0,255);
+		SDL_SetRenderDrawColor(renderer, 255-(side*100),0,0,255);
 		break;
 	case 3:
-		SDL_SetRenderDrawColor(renderer, 0,255,0,255);
+		SDL_SetRenderDrawColor(renderer, 0,255-(side*100),0,255);
+		break;
+	case 4:
+		SDL_SetRenderDrawColor(renderer, 0,255-(side*100),255-(side*100),255);
+		break;
+	case 5:
+		SDL_SetRenderDrawColor(renderer, 227, 225, 90,255);
 		break;
 	
 	default:
 		SDL_SetRenderDrawColor(renderer, 255,45,229,255);
 		break;
 	}
+
+}
+
+int playerMap(vect2d player){
+	return worldMap[(int)player.x][(int)player.y];
 }
 
 int main(int argc, char* argv[]) {
@@ -174,10 +197,11 @@ int main(int argc, char* argv[]) {
 		// Game Objects
 		vect2d player = vect2d(12,12);
 		vect2d playerDir = vect2d(-1,0);
-		vect2d playerU = vect2d(0,0.66);	// Sets fov, scale dependent
+		vect2d playerU = vect2d(0,0.50);	// Sets fov, scale dependent
 
 		while(!quit){
 			Uint64 start = SDL_GetPerformanceCounter();
+
 
 
 			//Handle events on queue
@@ -190,54 +214,92 @@ int main(int argc, char* argv[]) {
 				else if( e.type == SDL_KEYDOWN ) {
 					switch(e.key.keysym.sym){
 						case SDLK_ESCAPE:
-						quit = true;
+							quit = true;
+						break;
+						case SDLK_w:
+							fwrd = true;
+						break;
+						case SDLK_s:
+							back = true;
+						break;
+						case SDLK_a:
+							rleft = true;
+						break;
+						case SDLK_d:
+							rright = true;
+						break;
+						default:
+						break;
+					}
+				}
+				else if( e.type == SDL_KEYUP ) {
+					switch(e.key.keysym.sym){
+						case SDLK_w:
+							fwrd = false;
+						break;
+						case SDLK_s:
+							back = false;
+						break;
+						case SDLK_a:
+							rleft = false;
+						break;
+						case SDLK_d:
+							rright = false;
 						break;
 						default:
 						break;
 					}
 				}
 			}
+
+			//update player
+			if(fwrd){player+=(playerDir*playerspeed); if(playerMap(player) != 0){player-=(playerDir*playerspeed);}}
+			if(back){player-=(playerDir*playerspeed); if(playerMap(player) != 0){player+=(playerDir*playerspeed);}}
+			if(rright){playerDir.rotate(lookspeed); playerU.rotate(lookspeed);}
+			if(rleft){playerDir.rotate(-lookspeed); playerU.rotate(-lookspeed);}
 			
 			//Update screen
 			for(int x = 0; x < SCREEN_WIDTH; x++){
 				float cameraU = 2 * x / double(SCREEN_WIDTH) - 1;
-				vect2d rayDir = playerDir + (playerU*cameraU);
+				vect2d rayDir = playerDir - (playerU*cameraU);
 
 				float dist;
 				int target;
+				bool side;
 
-				calcRay(player, rayDir, &dist, &target);
+				calcRay(player, rayDir, &dist, &target, &side);
 
-				setRenderColor(renderer, target);
-				SDL_RenderDrawLine(renderer, x, dist*WORLD_HEIGHT, x, SCREEN_HEIGHT-(dist*WORLD_HEIGHT));
+				setRenderColor(renderer, target, side);
+				int drawHeight = (dist*WORLD_HEIGHT) - (abs(cameraU)*12);
+				if(drawHeight > (SCREEN_HEIGHT/2)-5){drawHeight = (SCREEN_HEIGHT/2)-5;}
+				SDL_RenderDrawLine(renderer, x, drawHeight, x, SCREEN_HEIGHT-(drawHeight));
 			}
 
 			// Draw Minimap
-			int minimapScale = 4;
+			int MMScale = 4;
 			if(true){
 				for (int x = 0; x < MAP_WIDTH; x++){
 					for (int y = 0; y < MAP_HEIGHT; y++){
 						setRenderColor(renderer, worldMap[x][y]);
-						SDL_RenderDrawPoint(renderer,x*minimapScale, y*minimapScale);
-						SDL_RenderDrawPoint(renderer,x*minimapScale +1, y*minimapScale);
-						SDL_RenderDrawPoint(renderer,x*minimapScale +2, y*minimapScale);
-						SDL_RenderDrawPoint(renderer,x*minimapScale +3, y*minimapScale);
-						SDL_RenderDrawPoint(renderer,x*minimapScale, y*minimapScale +1);
-						SDL_RenderDrawPoint(renderer,x*minimapScale, y*minimapScale +2);
-						SDL_RenderDrawPoint(renderer,x*minimapScale, y*minimapScale +3);
-						SDL_RenderDrawPoint(renderer,x*minimapScale +3, y*minimapScale +1);
-						SDL_RenderDrawPoint(renderer,x*minimapScale +3, y*minimapScale +2);
-						SDL_RenderDrawPoint(renderer,x*minimapScale +3, y*minimapScale +3);
-						SDL_RenderDrawPoint(renderer,x*minimapScale +1, y*minimapScale +3);
-						SDL_RenderDrawPoint(renderer,x*minimapScale +2, y*minimapScale +3);
-						SDL_RenderDrawPoint(renderer,x*minimapScale +3, y*minimapScale +3);
+						SDL_RenderDrawLine(renderer, x*MMScale, y*MMScale, x*MMScale, y*MMScale +3);
+						SDL_RenderDrawLine(renderer, x*MMScale+1, y*MMScale, x*MMScale+1, y*MMScale +3);
+						SDL_RenderDrawLine(renderer, x*MMScale+2, y*MMScale, x*MMScale+2, y*MMScale +3);
+						SDL_RenderDrawLine(renderer, x*MMScale+3, y*MMScale, x*MMScale+3, y*MMScale +3);
+						// SDL_RenderDrawLine(renderer, x*MMScale, y*MMScale, x*MMScale +3, y*MMScale);
+						// SDL_RenderDrawLine(renderer, x*MMScale, y*MMScale +3, x*MMScale +3, y*MMScale +3);
+						// SDL_RenderDrawLine(renderer, x*MMScale +3, y*MMScale, x*MMScale +3, y*MMScale +3);
 					}
 				}
+				setRenderColor(renderer, 9);
+				SDL_RenderDrawLine(renderer, player.x*MMScale, player.y*MMScale, (player+playerDir+playerU).x*MMScale, (player+playerDir+playerU).y*MMScale);
+				SDL_RenderDrawLine(renderer, player.x*MMScale, player.y*MMScale, (player+playerDir-playerU).x*MMScale, (player+playerDir-playerU).y*MMScale);
+				setRenderColor(renderer, 5);
+				SDL_RenderDrawPointF(renderer, player.x*MMScale, player.y*MMScale);
 			}
 			
 			SDL_RenderPresent( renderer );
-			// SDL_SetRenderDrawColor(renderer, 100,100,100,255);
-			// SDL_RenderDrawRect(renderer, NULL);
+			setRenderColor(renderer, 0);
+			SDL_RenderClear(renderer);
 
 
 			Uint64 end = SDL_GetPerformanceCounter();

@@ -37,6 +37,12 @@ public:
         return value;
     }
 
+    vect2d operator+=(vect2d const& obj) {
+        this->x += obj.x;
+        this->y += obj.y;
+        return *this;
+    }
+
     vect2d operator*(float const& obj) {
         vect2d value;
         value.x = obj * x;
@@ -49,6 +55,12 @@ public:
         value.x = x - obj.x;
         value.y = y - obj.y;
         return value;
+    }
+
+    vect2d operator-=(vect2d const& obj) {
+        this->x -= obj.x;
+        this->y -= obj.y;
+        return *this;
     }
 
     void normalize() {
