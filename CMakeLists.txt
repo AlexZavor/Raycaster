@@ -3,7 +3,13 @@ cmake_minimum_required(VERSION 3.12)
 project(RAYCASTER  VERSION 1.0.0
         DESCRIPTION "Raycasting Engine"
         LANGUAGES CXX)
-        
+
+
+# Usage:
+# cd build
+# cmake .. -G "MinGW Makefiles"
+# make
+
 set(DEBUG TRUE)
 
 link_directories(lib)
