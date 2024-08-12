@@ -1,11 +1,14 @@
 *.exe
 *.ini
 *.blend1
+RAYCASTER
 
 .vscode/
 
 #Cmake
+CMakeFiles/
 CmakeFiles/
 *.cmake
+CMakeCache.txt
 CmakeCache.txt
 Makefile

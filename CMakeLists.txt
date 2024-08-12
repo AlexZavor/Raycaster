@@ -5,7 +5,7 @@ project(RAYCASTER  VERSION 1.0.0
         LANGUAGES CXX)
 
 
-# Usage:
+# Usage (Windows):
 # cd build
 # cmake .. -G "MinGW Makefiles"
 # make
@@ -26,13 +26,18 @@ add_executable(RAYCASTER ${RAYCAST_SRC})
 
 find_package(SDL2 REQUIRED)
 
-target_link_libraries(RAYCASTER mingw32)
+if (WIN32)
+    target_link_libraries(RAYCASTER mingw32)
+endif (WIN32)
 target_link_libraries(RAYCASTER SDL2main)
 target_link_libraries(RAYCASTER SDL2_ttf)
 target_link_libraries(RAYCASTER SDL2)
 
 if(DEBUG)
-    set(CMAKE_CXX_FLAGS "-Wall -DDEBUG")
+    if (WIN32)
+        set(CMAKE_CXX_FLAGS "-Wall -DDEBUG")
+    endif (WIN32)
+    set(CMAKE_CXX_FLAGS "-Wall -DDEBUG -Wl,--copy-dt-needed-entries")
 else()
     set(CMAKE_CXX_FLAGS "-Wl,-subsystem,windows -O3")  
 endif()
