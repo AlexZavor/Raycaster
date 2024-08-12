@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "SDL.h"
+#include "SDL_image.h"
 #include "SDL_ttf.h"
 #include "vect2d.h"
 #include "math.h"
@@ -11,6 +12,8 @@
 
 #define MAP_WIDTH 24
 #define MAP_HEIGHT 24
+
+#define FLOWER_PATH "Res/Flower.png"
 
 //Input map
 bool fwrd = 0;
@@ -199,6 +202,9 @@ int main(int argc, char* argv[]) {
 		vect2d playerDir = vect2d(-1,0);
 		vect2d playerU = vect2d(0,0.50);	// Sets fov, scale dependent
 
+		vect2d flower = vect2d(3,3);
+		SDL_Texture* flower_texture = IMG_LoadTexture(renderer, FLOWER_PATH);
+
 		while(!quit){
 			Uint64 start = SDL_GetPerformanceCounter();
 
@@ -276,8 +282,8 @@ int main(int argc, char* argv[]) {
 			}
 
 			// Draw Minimap
-			int MMScale = 4;
 			if(true){
+				int MMScale = 4;
 				for (int x = 0; x < MAP_WIDTH; x++){
 					for (int y = 0; y < MAP_HEIGHT; y++){
 						setRenderColor(renderer, worldMap[x][y]);
@@ -297,6 +303,31 @@ int main(int argc, char* argv[]) {
 				SDL_RenderDrawPointF(renderer, player.x*MMScale, player.y*MMScale);
 			}
 			
+			// Draw flower
+			if(true){
+				vect2d flowerDir = (player-flower); 
+				vect2d weirdPlayer = playerDir;
+				weirdPlayer.rotate(1.57079632679);
+
+				float ang = weirdPlayer.dotProduct(flowerDir);
+				float view = weirdPlayer.normal().dotProduct((playerDir+playerU).normal());
+
+				// printf("ang %f, view %f\n", ang, view);
+
+				if(ang > view && ang < -view){
+					float dist = (flowerDir).getMag();
+					int w, h; // texture width & height
+					int drawHeight = (dist*WORLD_HEIGHT);
+
+					int drawX = -(ang * (SCREEN_WIDTH) / (abs(view*2))) + SCREEN_WIDTH/2;
+
+					if(drawHeight > (SCREEN_HEIGHT/2)+(h/2)){drawHeight = (SCREEN_HEIGHT/2)+(h/2);}
+					SDL_QueryTexture(flower_texture, NULL, NULL, &w, &h);
+					SDL_Rect texr; texr.x = drawX; texr.y = SCREEN_HEIGHT - drawHeight; texr.w = w*20/dist; texr.h = h*20/dist; 
+					SDL_RenderCopy(renderer, flower_texture, NULL, &texr);
+				}
+			}
+
 			SDL_RenderPresent( renderer );
 			setRenderColor(renderer, 0);
 			SDL_RenderClear(renderer);
@@ -304,11 +335,10 @@ int main(int argc, char* argv[]) {
 
 			Uint64 end = SDL_GetPerformanceCounter();
 			float elapsedMS = (end - start) / (float)SDL_GetPerformanceFrequency() * 1000.0f;
-			printf("%f\n", elapsedMS);
 			// Cap to 60 FPS
 			if(16.666f - elapsedMS > 0){
 				SDL_Delay((Uint32)(16.666f - elapsedMS));
-			}
+			}else{printf("%f\n", elapsedMS);}
 		}
 
 	}

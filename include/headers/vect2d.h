@@ -63,18 +63,36 @@ public:
         return *this;
     }
 
+    // Applies normalization to vector
     void normalize() {
         float mag = this->getMag();
         x /= mag;
         y /= mag;
     }
 
+    // returns normalized version of vector
+    vect2d normal(){
+        vect2d value;
+        float mag = this->getMag();
+        value.x = x/mag;
+        value.y = y/mag;
+        return value;
+    }
+
+    // Rotates vector by angle (Radians)
     vect2d rotate(float angle) {
         float px = x * cos(angle) - y * sin(angle);
         float py = x * sin(angle) + y * cos(angle);
         x = px;
         y = py;
         return *this;
+    }
+
+    // Returns dot product between vector and a, normalized
+    float dotProduct(vect2d a){
+        a.normalize();
+        vect2d b = normal();
+        return (a.x*b.x) + (a.y*b.y);
     }
 
 };
