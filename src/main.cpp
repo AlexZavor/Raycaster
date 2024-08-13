@@ -2,7 +2,8 @@
 #include "SDL.h"
 #include "SDL_image.h"
 #include "SDL_ttf.h"
-#include "vect2d.h"
+#include "raycastObject.h"
+#include "raycastPlayer.h"
 #include "math.h"
 
 #define SCREEN_WIDTH 1280
@@ -106,8 +107,8 @@ bool closeSDL(SDL_Window* window, SDL_Renderer* renderer, SDL_Texture* texture){
 }
 
 
-void calcRay(vect2d player, vect2d rayDir, float* dist, int* target, bool* side){
-	vect2d mapTile = vect2d((int)player.x, (int)player.y); //truncate to get start tile. 
+void calcRay(raycastPlayer player, vect2d rayDir, float* dist, int* target, bool* side){
+	vect2d mapTile = vect2d((int)player.pos.x, (int)player.pos.y); //truncate to get start tile. 
 
 	// float slopeY = (rayDir.y*rayDir.y)/(rayDir.x*rayDir.x);
 	// float deltaX = sqrt(1+(1/slopeY));
@@ -122,16 +123,16 @@ void calcRay(vect2d player, vect2d rayDir, float* dist, int* target, bool* side)
 	
 	if (rayDir.x < 0) {	// ray on left
 		stepX = -1;
-		nextX = (player.x - mapTile.x) * deltaX;
+		nextX = (player.pos.x - mapTile.x) * deltaX;
 	} else {			// ray on right
 		stepX = 1;
-		nextX = (mapTile.x + 1.0 - player.x) * deltaX;
+		nextX = (mapTile.x + 1.0 - player.pos.x) * deltaX;
 	} if (rayDir.y < 0) {	// ray down
 		stepY = -1;
-		nextY = (player.y - mapTile.y) * deltaY;
+		nextY = (player.pos.y - mapTile.y) * deltaY;
 	} else {				// ray up
 		stepY = 1;
-		nextY = (mapTile.y + 1.0 - player.y) * deltaY;
+		nextY = (mapTile.y + 1.0 - player.pos.y) * deltaY;
 	}
 
 	// DDA raycast
@@ -179,11 +180,39 @@ void setRenderColor(SDL_Renderer* renderer, int color, bool side = false){
 		SDL_SetRenderDrawColor(renderer, 255,45,229,255);
 		break;
 	}
-
 }
 
-int playerMap(vect2d player){
-	return worldMap[(int)player.x][(int)player.y];
+void setRenderColor(SDL_Renderer* renderer, rgba32 color){
+	SDL_SetRenderDrawColor(renderer, color.r,color.g,color.b,color.a);
+}
+
+void drawObject(SDL_Renderer* renderer, raycastPlayer player, raycastObject object) {
+	vect2d objectDir = (player.pos-object.pos); 
+	vect2d weirdPlayer = player.dir;
+	weirdPlayer.rotate(PI_HALF);	// Makes ratio of dot product more useful for mapping across screen
+
+	float ang = weirdPlayer.dotProduct(objectDir);
+	float view = weirdPlayer.normal().dotProduct((player.dir+player.U).normal());
+
+	if(ang > view && ang < -view && player.dir.dotProduct(objectDir)<.5){// Check if in view
+		float dist = (objectDir).getMag();
+		float walldist; int tar; bool side;
+		calcRay(player,objectDir.normal().negative(),&walldist, &tar, &side);
+
+		if(dist<walldist){										// Check if not behind wall
+			int drawX = -(ang * (SCREEN_WIDTH) / (abs(view*2))) + SCREEN_WIDTH/2 - (object.w/2);
+			int drawHeight = (dist*WORLD_HEIGHT) +object.h*20/dist;
+			if(drawHeight > (SCREEN_HEIGHT/2)+(object.h/2)){drawHeight = (SCREEN_HEIGHT/2)+(object.h/2);}
+
+			SDL_Rect texr; texr.x = drawX; texr.y = SCREEN_HEIGHT - drawHeight; 
+						   texr.w = object.w*20/dist; texr.h = object.h*20/dist; 
+			SDL_RenderCopy(renderer, object.getTexture(renderer), NULL, &texr);
+		}
+	}
+}
+
+int mapPoint(vect2d point){
+	return worldMap[(int)point.x][(int)point.y];
 }
 
 int main(int argc, char* argv[]) {
@@ -202,16 +231,12 @@ int main(int argc, char* argv[]) {
 		bool quit = false;
 
 		// Game Objects
-		vect2d player = vect2d(12,12);
-		vect2d playerDir = vect2d(-1,0);
-		vect2d playerU = vect2d(0,0.50);	// Sets fov, scale dependent
 
-		vect2d flower = vect2d(3,3);
-		SDL_Texture* flower_texture = IMG_LoadTexture(renderer, FLOWER_PATH);
+		raycastPlayer player = raycastPlayer(vect2d(12,12));
+		raycastObject flower = raycastObject(vect2d(3,3), FLOWER_PATH);
 
 		while(!quit){
 			Uint64 start = SDL_GetPerformanceCounter();
-
 
 
 			//Handle events on queue
@@ -263,21 +288,21 @@ int main(int argc, char* argv[]) {
 			}
 
 			//update player
-			if(fwrd){player+=(playerDir*playerspeed); if(playerMap(player) != 0){player-=(playerDir*playerspeed);}}
-			if(back){player-=(playerDir*playerspeed); if(playerMap(player) != 0){player+=(playerDir*playerspeed);}}
-			if(rright){playerDir.rotate(lookspeed); playerU.rotate(lookspeed);}
-			if(rleft){playerDir.rotate(-lookspeed); playerU.rotate(-lookspeed);}
+			if(fwrd){player.movePlayer(playerspeed); if(mapPoint(player.pos) != 0){player.movePlayer(playerspeed);}}
+			if(back){player.movePlayer(-playerspeed); if(mapPoint(player.pos) != 0){player.movePlayer(playerspeed);}}
+			if(rright){player.rotate(lookspeed);}
+			if(rleft){player.rotate(-lookspeed);}
 			
 			//Update screen
 			for(int x = 0; x < SCREEN_WIDTH; x++){
 				float cameraU = 2 * x / double(SCREEN_WIDTH) - 1;
-				vect2d rayDir = playerDir - (playerU*cameraU);
+				vect2d rayDir = player.dir - (player.U*cameraU);
 
 				float dist;
 				int target;
 				bool side;
 
-				calcRay(player, rayDir, &dist, &target, &side);
+				calcRay(player, rayDir.normal(), &dist, &target, &side);
 
 				setRenderColor(renderer, target, side);
 				int drawHeight = (dist*WORLD_HEIGHT) - (abs(cameraU)*12);
@@ -301,36 +326,18 @@ int main(int argc, char* argv[]) {
 					}
 				}
 				setRenderColor(renderer, 9);
-				SDL_RenderDrawLine(renderer, player.x*MMScale, player.y*MMScale, (player+playerDir+playerU).x*MMScale, (player+playerDir+playerU).y*MMScale);
-				SDL_RenderDrawLine(renderer, player.x*MMScale, player.y*MMScale, (player+playerDir-playerU).x*MMScale, (player+playerDir-playerU).y*MMScale);
+				SDL_RenderDrawLine(renderer, player.pos.x*MMScale, player.pos.y*MMScale, 
+											 (player.pos+player.dir+player.U).x*MMScale, 
+											 (player.pos+player.dir+player.U).y*MMScale);
+				SDL_RenderDrawLine(renderer, player.pos.x*MMScale, player.pos.y*MMScale, 
+											 (player.pos+player.dir-player.U).x*MMScale, 
+											 (player.pos+player.dir-player.U).y*MMScale);
 				setRenderColor(renderer, 5);
-				SDL_RenderDrawPointF(renderer, player.x*MMScale, player.y*MMScale);
+				SDL_RenderDrawPointF(renderer, player.pos.x*MMScale, player.pos.y*MMScale);
 			}
 			
 			// Draw flower
-			if(true){
-				vect2d flowerDir = (player-flower); 
-				vect2d weirdPlayer = playerDir;
-				weirdPlayer.rotate(PI_HALF);	// Makes ratio of dot product more useful for mapping across screen
-
-				float ang = weirdPlayer.dotProduct(flowerDir);
-				float view = weirdPlayer.normal().dotProduct((playerDir+playerU).normal());
-
-				// printf("ang %f, view %f\n", ang, view);
-
-				if(ang > view && ang < -view && playerDir.dotProduct(flowerDir)<.5){
-					float dist = (flowerDir).getMag();
-					int w, h; // texture width & height
-
-					int drawX = -(ang * (SCREEN_WIDTH) / (abs(view*2))) + SCREEN_WIDTH/2;
-
-					SDL_QueryTexture(flower_texture, NULL, NULL, &w, &h);
-					int drawHeight = (dist*WORLD_HEIGHT) +h*20/dist;
-					if(drawHeight > (SCREEN_HEIGHT/2)+(h/2)){drawHeight = (SCREEN_HEIGHT/2)+(h/2);}
-					SDL_Rect texr; texr.x = drawX; texr.y = SCREEN_HEIGHT - drawHeight; texr.w = w*20/dist; texr.h = h*20/dist; 
-					SDL_RenderCopy(renderer, flower_texture, NULL, &texr);
-				}
-			}
+			drawObject(renderer, player, flower);
 
 			SDL_RenderPresent( renderer );
 			setRenderColor(renderer, 0);

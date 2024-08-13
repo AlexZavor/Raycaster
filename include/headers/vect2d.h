@@ -88,6 +88,14 @@ public:
         return *this;
     }
 
+    // returns negative version of vector
+    vect2d negative() {
+        vect2d value;
+        value.x = -x;
+        value.y = -y;
+        return value;
+    }
+
     // Returns dot product between vector and a, normalized
     float dotProduct(vect2d a){
         a.normalize();
