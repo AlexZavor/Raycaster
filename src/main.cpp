@@ -3,6 +3,8 @@
 #include "SDL_image.h"
 #include "SDL_ttf.h"
 #include "vect2d.h"
+#include "rgba.h"
+#include "raycastObject.h"
 #include "math.h"
 
 #define SCREEN_WIDTH 1280
@@ -179,7 +181,10 @@ void setRenderColor(SDL_Renderer* renderer, int color, bool side = false){
 		SDL_SetRenderDrawColor(renderer, 255,45,229,255);
 		break;
 	}
+}
 
+void setRenderColor(SDL_Renderer* renderer, rgba32 color){
+	SDL_SetRenderDrawColor(renderer, color.r,color.g,color.b,color.a);
 }
 
 int playerMap(vect2d player){
@@ -206,8 +211,7 @@ int main(int argc, char* argv[]) {
 		vect2d playerDir = vect2d(-1,0);
 		vect2d playerU = vect2d(0,0.50);	// Sets fov, scale dependent
 
-		vect2d flower = vect2d(3,3);
-		SDL_Texture* flower_texture = IMG_LoadTexture(renderer, FLOWER_PATH);
+		raycastObject flower = raycastObject(vect2d(3,3), FLOWER_PATH);
 
 		while(!quit){
 			Uint64 start = SDL_GetPerformanceCounter();
@@ -309,7 +313,7 @@ int main(int argc, char* argv[]) {
 			
 			// Draw flower
 			if(true){
-				vect2d flowerDir = (player-flower); 
+				vect2d flowerDir = (player-flower.pos); 
 				vect2d weirdPlayer = playerDir;
 				weirdPlayer.rotate(PI_HALF);	// Makes ratio of dot product more useful for mapping across screen
 
@@ -324,6 +328,7 @@ int main(int argc, char* argv[]) {
 
 					int drawX = -(ang * (SCREEN_WIDTH) / (abs(view*2))) + SCREEN_WIDTH/2;
 
+					SDL_Texture* flower_texture = SDL_CreateTextureFromSurface(renderer, IMG_Load(FLOWER_PATH));
 					SDL_QueryTexture(flower_texture, NULL, NULL, &w, &h);
 					int drawHeight = (dist*WORLD_HEIGHT) +h*20/dist;
 					if(drawHeight > (SCREEN_HEIGHT/2)+(h/2)){drawHeight = (SCREEN_HEIGHT/2)+(h/2);}
