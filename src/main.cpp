@@ -9,6 +9,8 @@
 #define SCREEN_HEIGHT 720
 #define WORLD_HEIGHT 20
 
+#define PI_HALF 1.57079632679
+
 
 #define MAP_WIDTH 24
 #define MAP_HEIGHT 24
@@ -78,6 +80,7 @@ bool initializeSDL(SDL_Window** window, SDL_Renderer** renderer, SDL_Texture** t
 	// SDL_RenderSetScale(*renderer, SCALE, SCALE);
 
 	TTF_Init();
+	IMG_Init(IMG_INIT_PNG);
 
 	return true;
 }
@@ -97,6 +100,7 @@ bool closeSDL(SDL_Window* window, SDL_Renderer* renderer, SDL_Texture* texture){
 	}
 	//Quit SDL subsystems
 	TTF_Quit();
+	IMG_Quit();
 	SDL_Quit();
 	return true;
 }
@@ -307,22 +311,22 @@ int main(int argc, char* argv[]) {
 			if(true){
 				vect2d flowerDir = (player-flower); 
 				vect2d weirdPlayer = playerDir;
-				weirdPlayer.rotate(1.57079632679);
+				weirdPlayer.rotate(PI_HALF);	// Makes ratio of dot product more useful for mapping across screen
 
 				float ang = weirdPlayer.dotProduct(flowerDir);
 				float view = weirdPlayer.normal().dotProduct((playerDir+playerU).normal());
 
 				// printf("ang %f, view %f\n", ang, view);
 
-				if(ang > view && ang < -view){
+				if(ang > view && ang < -view && playerDir.dotProduct(flowerDir)<.5){
 					float dist = (flowerDir).getMag();
 					int w, h; // texture width & height
-					int drawHeight = (dist*WORLD_HEIGHT);
 
 					int drawX = -(ang * (SCREEN_WIDTH) / (abs(view*2))) + SCREEN_WIDTH/2;
 
-					if(drawHeight > (SCREEN_HEIGHT/2)+(h/2)){drawHeight = (SCREEN_HEIGHT/2)+(h/2);}
 					SDL_QueryTexture(flower_texture, NULL, NULL, &w, &h);
+					int drawHeight = (dist*WORLD_HEIGHT) +h*20/dist;
+					if(drawHeight > (SCREEN_HEIGHT/2)+(h/2)){drawHeight = (SCREEN_HEIGHT/2)+(h/2);}
 					SDL_Rect texr; texr.x = drawX; texr.y = SCREEN_HEIGHT - drawHeight; texr.w = w*20/dist; texr.h = h*20/dist; 
 					SDL_RenderCopy(renderer, flower_texture, NULL, &texr);
 				}
