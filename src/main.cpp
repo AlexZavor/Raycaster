@@ -17,6 +17,7 @@
 #define MAP_HEIGHT 24
 
 #define FLOWER_PATH "Res/Flower.png"
+#define WALL_TEXUTRE_PATH "Res/WallTexture.png"
 
 //Input map
 bool fwrd = 0;
@@ -107,14 +108,14 @@ bool closeSDL(SDL_Window* window, SDL_Renderer* renderer, SDL_Texture* texture){
 }
 
 
-void calcRay(raycastPlayer player, vect2d rayDir, float* dist, int* target, bool* side){
+void calcRay(raycastPlayer player, vect2d rayDir, float* dist, int* target, bool* side, float* xDist = nullptr){
 	vect2d mapTile = vect2d((int)player.pos.x, (int)player.pos.y); //truncate to get start tile. 
 
 	// float slopeY = (rayDir.y*rayDir.y)/(rayDir.x*rayDir.x);
 	// float deltaX = sqrt(1+(1/slopeY));
 	// float deltaY = sqrt(1+slopeY);
-      double deltaX = (rayDir.x == 0) ? 1e30 : std::abs(1 / rayDir.x);
-      double deltaY = (rayDir.y == 0) ? 1e30 : std::abs(1 / rayDir.y);
+	double deltaX = (rayDir.x == 0) ? 1e30 : std::abs(1 / rayDir.x);
+	double deltaY = (rayDir.y == 0) ? 1e30 : std::abs(1 / rayDir.y);
 
 	int stepX;
 	int stepY;
@@ -150,6 +151,11 @@ void calcRay(raycastPlayer player, vect2d rayDir, float* dist, int* target, bool
 		}
 	}
 
+	if(xDist != nullptr){
+		vect2d newPoint = (player.pos + (rayDir*(*dist)));
+		*xDist = *side ? newPoint.x-(int)newPoint.x : newPoint.y-(int)newPoint.y;
+	}
+
 	*target = worldMap[(int)mapTile.x][(int)mapTile.y];
 	return;
 }
@@ -182,7 +188,10 @@ void setRenderColor(SDL_Renderer* renderer, int color, bool side = false){
 	}
 }
 
-void setRenderColor(SDL_Renderer* renderer, rgba32 color){
+void setRenderColor(SDL_Renderer* renderer, rgba32 color, bool side = false){
+	if(side){
+		color = color.darken(128);
+	}
 	SDL_SetRenderDrawColor(renderer, color.r,color.g,color.b,color.a);
 }
 
@@ -234,6 +243,11 @@ int main(int argc, char* argv[]) {
 
 		raycastPlayer player = raycastPlayer(vect2d(12,12));
 		raycastObject flower = raycastObject(vect2d(3,3), FLOWER_PATH);
+
+		// Textures
+		SDL_Surface* wall = IMG_Load(WALL_TEXUTRE_PATH);
+		rgba32* wallArray = (rgba32*)wall->pixels;
+		// printf("%i\n", wallArray[12].r);
 
 		while(!quit){
 			Uint64 start = SDL_GetPerformanceCounter();
@@ -288,7 +302,7 @@ int main(int argc, char* argv[]) {
 			}
 
 			//update player
-			if(fwrd){player.movePlayer(playerspeed); if(mapPoint(player.pos) != 0){player.movePlayer(playerspeed);}}
+			if(fwrd){player.movePlayer(playerspeed); if(mapPoint(player.pos) != 0){player.movePlayer(-playerspeed);}}
 			if(back){player.movePlayer(-playerspeed); if(mapPoint(player.pos) != 0){player.movePlayer(playerspeed);}}
 			if(rright){player.rotate(lookspeed);}
 			if(rleft){player.rotate(-lookspeed);}
@@ -298,20 +312,31 @@ int main(int argc, char* argv[]) {
 				float cameraU = 2 * x / double(SCREEN_WIDTH) - 1;
 				vect2d rayDir = player.dir - (player.U*cameraU);
 
-				float dist;
+				float dist, xDist;
 				int target;
 				bool side;
 
-				calcRay(player, rayDir.normal(), &dist, &target, &side);
+				calcRay(player, rayDir.normal(), &dist, &target, &side, &xDist);
 
-				setRenderColor(renderer, target, side);
-				int drawHeight = (dist*WORLD_HEIGHT) - (abs(cameraU)*12);
-				if(drawHeight > (SCREEN_HEIGHT/2)-5){drawHeight = (SCREEN_HEIGHT/2)-5;}
-				SDL_RenderDrawLine(renderer, x, drawHeight, x, SCREEN_HEIGHT-(drawHeight));
+				if(target == 1){	// Textured drawing
+					int xpix = xDist*wall->w;
+					int drawHeight = (dist*WORLD_HEIGHT) - (abs(cameraU)*12);
+					if(drawHeight > (SCREEN_HEIGHT/2)-5){drawHeight = (SCREEN_HEIGHT/2)-5;}
+					float pixWidth = (SCREEN_HEIGHT -drawHeight*2)/(float)wall->h; 
+					for (int ypix = 0; ypix < wall->h; ypix++){
+						setRenderColor(renderer, *(wallArray+(xpix+(ypix*wall->w))), side);
+						SDL_RenderDrawLine(renderer, x, drawHeight+(pixWidth*ypix), x, drawHeight+(pixWidth*(ypix+1)));
+					}
+				}else{
+					setRenderColor(renderer, target, side);
+					int drawHeight = (dist*WORLD_HEIGHT) - (abs(cameraU)*12);
+					if(drawHeight > (SCREEN_HEIGHT/2)-5){drawHeight = (SCREEN_HEIGHT/2)-5;}
+					SDL_RenderDrawLine(renderer, x, drawHeight, x, SCREEN_HEIGHT-(drawHeight));
+				}
 			}
 
 			// Draw Minimap
-			if(true){
+			if(false){
 				int MMScale = 4;
 				for (int x = 0; x < MAP_WIDTH; x++){
 					for (int y = 0; y < MAP_HEIGHT; y++){
@@ -349,7 +374,7 @@ int main(int argc, char* argv[]) {
 			// Cap to 60 FPS
 			if(16.666f - elapsedMS > 0){
 				SDL_Delay((Uint32)(16.666f - elapsedMS));
-			}else{printf("%f\n", elapsedMS);}
+			}else{printf("slowframe - %f\n", elapsedMS);}
 		}
 
 	}
