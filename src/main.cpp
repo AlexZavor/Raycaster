@@ -2,9 +2,19 @@
 #include "SDL.h"
 #include "SDL_image.h"
 #include "SDL_ttf.h"
+#include "framebuffer.h"
 #include "raycastObject.h"
 #include "raycastPlayer.h"
 #include "math.h"
+
+// #define AVGFPS
+// 		without any drawing - 0.4ms
+//		draw textures slow	- 11.9 ms
+//		draw textures fbuff	- 3.5 ms
+#ifdef AVGFPS
+	static double maxFtime = 0;
+	static long frames = 0;
+#endif
 
 #define SCREEN_WIDTH 1280
 #define SCREEN_HEIGHT 720
@@ -160,39 +170,51 @@ void calcRay(raycastPlayer player, vect2d rayDir, float* dist, int* target, bool
 	return;
 }
 
-void setRenderColor(SDL_Renderer* renderer, int color, bool side = false){
+int mapPoint(vect2d point){
+	return worldMap[(int)point.x][(int)point.y];
+}
+
+rgba32 setRenderColor(SDL_Renderer* renderer, int color, bool side = false){
 	switch (color)
 	{
 	case 0:
 		SDL_SetRenderDrawColor(renderer, 0,0,0,255);
+		return rgba32(0,0,0);
 		break;
 	case 1:
 		SDL_SetRenderDrawColor(renderer, 0,0,255-(side*100),255);
+		return rgba32(0,0,255-(side*100));
 		break;
 	case 2:
 		SDL_SetRenderDrawColor(renderer, 255-(side*100),0,0,255);
+		return rgba32(255-(side*100),0,0);
 		break;
 	case 3:
 		SDL_SetRenderDrawColor(renderer, 0,255-(side*100),0,255);
+		return rgba32(0,255-(side*100),0);
 		break;
 	case 4:
 		SDL_SetRenderDrawColor(renderer, 0,255-(side*100),255-(side*100),255);
+		return rgba32(0,255-(side*100),255-(side*100));
 		break;
 	case 5:
 		SDL_SetRenderDrawColor(renderer, 227, 225, 90,255);
+		return rgba32(227, 225, 90);
 		break;
 	
 	default:
 		SDL_SetRenderDrawColor(renderer, 255,45,229,255);
+		return rgba32(255,45,229);
 		break;
 	}
 }
 
-void setRenderColor(SDL_Renderer* renderer, rgba32 color, bool side = false){
+rgba32 setRenderColor(SDL_Renderer* renderer, rgba32 color, bool side = false){
 	if(side){
 		color = color.darken(128);
 	}
 	SDL_SetRenderDrawColor(renderer, color.r,color.g,color.b,color.a);
+	return color;
 }
 
 void drawObject(SDL_Renderer* renderer, raycastPlayer player, raycastObject object) {
@@ -220,9 +242,6 @@ void drawObject(SDL_Renderer* renderer, raycastPlayer player, raycastObject obje
 	}
 }
 
-int mapPoint(vect2d point){
-	return worldMap[(int)point.x][(int)point.y];
-}
 
 int main(int argc, char* argv[]) {
 	// The window we'll be rendering to
@@ -231,7 +250,6 @@ int main(int argc, char* argv[]) {
 	SDL_Renderer* renderer = NULL;
 	// The texture to render to
     SDL_Texture* texture = NULL;
-	// rect for clearing quickly
 	// Event handler
 	SDL_Event e;
 
@@ -240,7 +258,7 @@ int main(int argc, char* argv[]) {
 		bool quit = false;
 
 		// Game Objects
-
+		framebuffer fbuff = framebuffer(texture, SCREEN_WIDTH, SCREEN_HEIGHT);
 		raycastPlayer player = raycastPlayer(vect2d(12,12));
 		raycastObject flower = raycastObject(vect2d(3,3), FLOWER_PATH);
 
@@ -253,14 +271,16 @@ int main(int argc, char* argv[]) {
 			Uint64 start = SDL_GetPerformanceCounter();
 
 
-			//Handle events on queue
+			//Handle events on queue (Takes significant time)
 			while( SDL_PollEvent( &e ) != 0 ) {
+				switch (e.type){
+					
 				//User requests quit (X button)
-				if( e.type == SDL_QUIT ) {
+				case SDL_QUIT:
 					quit = true;
-				}
+					break;
 				//User presses a key
-				else if( e.type == SDL_KEYDOWN ) {
+				case SDL_KEYDOWN:
 					switch(e.key.keysym.sym){
 						case SDLK_ESCAPE:
 							quit = true;
@@ -280,8 +300,8 @@ int main(int argc, char* argv[]) {
 						default:
 						break;
 					}
-				}
-				else if( e.type == SDL_KEYUP ) {
+					break;
+				case SDL_KEYUP:
 					switch(e.key.keysym.sym){
 						case SDLK_w:
 							fwrd = false;
@@ -298,6 +318,10 @@ int main(int argc, char* argv[]) {
 						default:
 						break;
 					}
+					break;
+				
+				default:
+					break;
 				}
 			}
 
@@ -324,44 +348,44 @@ int main(int argc, char* argv[]) {
 					if(drawHeight > (SCREEN_HEIGHT/2)-5){drawHeight = (SCREEN_HEIGHT/2)-5;}
 					float pixWidth = (SCREEN_HEIGHT -drawHeight*2)/(float)wall->h; 
 					for (int ypix = 0; ypix < wall->h; ypix++){
-						setRenderColor(renderer, *(wallArray+(xpix+(ypix*wall->w))), side);
-						SDL_RenderDrawLine(renderer, x, drawHeight+(pixWidth*ypix), x, drawHeight+(pixWidth*(ypix+1)));
+						fbuff.drawVline(x, drawHeight+(pixWidth*ypix), drawHeight+(pixWidth*(ypix+1)), (*(wallArray+(xpix+(ypix*wall->w)))).darken(255-side*128));
 					}
 				}else{
-					setRenderColor(renderer, target, side);
 					int drawHeight = (dist*WORLD_HEIGHT) - (abs(cameraU)*12);
 					if(drawHeight > (SCREEN_HEIGHT/2)-5){drawHeight = (SCREEN_HEIGHT/2)-5;}
-					SDL_RenderDrawLine(renderer, x, drawHeight, x, SCREEN_HEIGHT-(drawHeight));
+					fbuff.drawVline(x, drawHeight, SCREEN_HEIGHT-(drawHeight), setRenderColor(renderer, target, side));
 				}
 			}
+			fbuff.pushFrame(renderer);
 
-			// Draw Minimap
-			if(false){
+			// Draw Minimap (0.08ms)
+			if(true){
+				// Draw map
 				int MMScale = 4;
 				for (int x = 0; x < MAP_WIDTH; x++){
 					for (int y = 0; y < MAP_HEIGHT; y++){
 						setRenderColor(renderer, worldMap[x][y]);
-						SDL_RenderDrawLine(renderer, x*MMScale, y*MMScale, x*MMScale, y*MMScale +3);
-						SDL_RenderDrawLine(renderer, x*MMScale+1, y*MMScale, x*MMScale+1, y*MMScale +3);
-						SDL_RenderDrawLine(renderer, x*MMScale+2, y*MMScale, x*MMScale+2, y*MMScale +3);
-						SDL_RenderDrawLine(renderer, x*MMScale+3, y*MMScale, x*MMScale+3, y*MMScale +3);
-						// SDL_RenderDrawLine(renderer, x*MMScale, y*MMScale, x*MMScale +3, y*MMScale);
-						// SDL_RenderDrawLine(renderer, x*MMScale, y*MMScale +3, x*MMScale +3, y*MMScale +3);
-						// SDL_RenderDrawLine(renderer, x*MMScale +3, y*MMScale, x*MMScale +3, y*MMScale +3);
+						SDL_Rect rect; rect.x = x*MMScale; rect.y = y*MMScale;
+									   rect.w = MMScale; rect.h = MMScale;
+						SDL_RenderFillRect(renderer, &rect);
 					}
 				}
+				// Draw view
 				setRenderColor(renderer, 9);
-				SDL_RenderDrawLine(renderer, player.pos.x*MMScale, player.pos.y*MMScale, 
-											 (player.pos+player.dir+player.U).x*MMScale, 
-											 (player.pos+player.dir+player.U).y*MMScale);
-				SDL_RenderDrawLine(renderer, player.pos.x*MMScale, player.pos.y*MMScale, 
-											 (player.pos+player.dir-player.U).x*MMScale, 
-											 (player.pos+player.dir-player.U).y*MMScale);
+				SDL_Point viewPoints[3]; 
+				viewPoints[0].x = (player.pos+player.dir+player.U).x*MMScale;
+				viewPoints[0].y = (player.pos+player.dir+player.U).y*MMScale;
+				viewPoints[1].x = player.pos.x*MMScale;
+				viewPoints[1].y = player.pos.y*MMScale;
+				viewPoints[2].x = (player.pos+player.dir-player.U).x*MMScale;
+				viewPoints[2].y = (player.pos+player.dir-player.U).y*MMScale;
+				SDL_RenderDrawLines(renderer, viewPoints, 3);
+				// Draw player
 				setRenderColor(renderer, 5);
-				SDL_RenderDrawPointF(renderer, player.pos.x*MMScale, player.pos.y*MMScale);
+				SDL_RenderDrawPoint(renderer, player.pos.x*MMScale, player.pos.y*MMScale);
 			}
 			
-			// Draw flower
+			// Draw flower (.2ms per object in frame)
 			drawObject(renderer, player, flower);
 
 			SDL_RenderPresent( renderer );
@@ -372,6 +396,10 @@ int main(int argc, char* argv[]) {
 			Uint64 end = SDL_GetPerformanceCounter();
 			float elapsedMS = (end - start) / (float)SDL_GetPerformanceFrequency() * 1000.0f;
 			// Cap to 60 FPS
+			#ifdef AVGFPS
+				frames++;
+				maxFtime += elapsedMS;
+			#endif
 			if(16.666f - elapsedMS > 0){
 				SDL_Delay((Uint32)(16.666f - elapsedMS));
 			}else{printf("slowframe - %f\n", elapsedMS);}
@@ -379,7 +407,16 @@ int main(int argc, char* argv[]) {
 
 	}
 
+	#ifdef AVGFPS
+		printf("Average Frame Time - %fms\n", maxFtime/frames);
+	#endif
 	closeSDL(window, renderer, texture);
 
 	return 0;
 }
+
+/*
+			Uint64 quickcountS = SDL_GetPerformanceCounter();
+			Uint64 quickcountE = SDL_GetPerformanceCounter();
+			printf("quickcount - %f\n",(quickcountE - quickcountS) / (float)SDL_GetPerformanceFrequency() * 1000.0f);
+*/
