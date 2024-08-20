@@ -4,8 +4,7 @@
 #include <stdint.h>
 #include "SDL.h"
 
-class rgba32
-{
+class rgba32 {
 public:
     uint8_t b;
     uint8_t g;

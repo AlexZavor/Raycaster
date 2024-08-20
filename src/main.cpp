@@ -7,7 +7,6 @@
 #include "raycastObject.h"
 #include "raycastPlayer.h"
 #include "raycastTexture.h"
-#include "math.h"
 
 // #define AVGFPS
 // 		without any drawing - 0.4ms
@@ -36,46 +35,6 @@ bool rleft = 0;
 bool rright = 0;
 float playerspeed = 0.05;
 float lookspeed = 0.02;
-
-// #define MAP_WIDTH 24
-// #define MAP_HEIGHT 24
-// #define MAP_DEPTH 6
-
-// int worldMap[MAP_WIDTH][MAP_HEIGHT]=
-// {
-//   {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
-//   {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-//   {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-//   {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-//   {1,0,0,0,0,0,2,2,2,2,2,0,0,0,0,3,0,3,0,3,0,0,0,1},
-//   {1,0,0,0,0,0,2,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,1},
-//   {1,0,0,0,0,0,2,0,0,0,2,0,0,0,0,3,0,0,0,3,0,0,0,1},
-//   {1,0,0,0,0,0,2,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,1},
-//   {1,0,0,0,0,0,2,2,0,2,2,0,0,0,0,3,0,3,0,3,0,0,0,1},
-//   {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-//   {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-//   {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-//   {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-//   {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-//   {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-//   {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-//   {1,4,4,4,4,4,4,4,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-//   {1,4,0,4,0,0,0,0,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-//   {1,4,0,0,0,0,5,0,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-//   {1,4,0,4,0,0,0,0,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-//   {1,4,0,4,4,4,4,4,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-//   {1,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-//   {1,4,4,4,4,4,4,4,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-//   {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}
-// };
-// rgba32 colorMap[MAP_DEPTH] = {
-// 	rgba32(0,0,0),
-// 	rgba32(0,0,255),
-// 	rgba32(255,0,0),
-// 	rgba32(0,255,0),
-// 	rgba32(0,255,255),
-// 	rgba32(227, 225, 90)
-// };
 
 
 bool initializeSDL(SDL_Window** window, SDL_Renderer** renderer, SDL_Texture** texture){
@@ -131,7 +90,7 @@ bool closeSDL(SDL_Window* window, SDL_Renderer* renderer, SDL_Texture* texture){
 
 
 void calcRay(raycastPlayer player, raycastMap map, 
-			 vect2d rayDir, float* dist, int* target, bool* side, float* xDist = nullptr){
+			 vect2d rayDir, float* dist, int* target, bool* side, float* xDist = NULL){
 	vect2d mapTile = vect2d((int)player.pos.x, (int)player.pos.y); //truncate to get start tile. 
 
 	// float slopeY = (rayDir.y*rayDir.y)/(rayDir.x*rayDir.x);
@@ -174,7 +133,7 @@ void calcRay(raycastPlayer player, raycastMap map,
 		}
 	}
 
-	if(xDist != nullptr){
+	if(xDist != NULL){
 		vect2d newPoint = (player.pos + (rayDir*(*dist)));
 		*xDist = *side ? newPoint.x-(int)newPoint.x : newPoint.y-(int)newPoint.y;
 	}
@@ -183,7 +142,7 @@ void calcRay(raycastPlayer player, raycastMap map,
 	return;
 }
 
-void drawObject(SDL_Renderer* renderer, raycastPlayer player, raycastMap map, raycastObject object) {
+void drawObject(SDL_Renderer* renderer, raycastPlayer player, raycastMap map, raycastObject object, float scale) {
 	vect2d objectDir = (player.pos-object.pos); 
 	vect2d weirdPlayer = player.dir;
 	weirdPlayer.rotate(PI_HALF);	// Makes ratio of dot product more useful for mapping across screen
@@ -198,11 +157,11 @@ void drawObject(SDL_Renderer* renderer, raycastPlayer player, raycastMap map, ra
 
 		if(dist<walldist){										// Check if not behind wall
 			int drawX = -(ang * (SCREEN_WIDTH) / (abs(view*2))) + SCREEN_WIDTH/2 - (object.w/2);
-			int drawHeight = (dist*WORLD_HEIGHT) +object.h*20/dist;
+			int drawHeight = (dist*WORLD_HEIGHT) +object.h*scale/dist;
 			if(drawHeight > (SCREEN_HEIGHT/2)+(object.h/2)){drawHeight = (SCREEN_HEIGHT/2)+(object.h/2);}
 
 			SDL_Rect texr; texr.x = drawX; texr.y = SCREEN_HEIGHT - drawHeight; 
-						   texr.w = object.w*20/dist; texr.h = object.h*20/dist; 
+						   texr.w = object.w*scale/dist; texr.h = object.h*scale/dist; 
 			SDL_RenderCopy(renderer, object.getTexture(renderer), NULL, &texr);
 		}
 	}
@@ -230,7 +189,8 @@ int main(int argc, char* argv[]) {
 		raycastObject flower = raycastObject(vect2d(3,3), FLOWER_PATH);
 
 		// Textures
-		raycastTexture* textureMap[255] = {nullptr};		// TODO: malloc probably
+		raycastTexture** textureMap = (raycastTexture**)malloc(map.colorDepth * sizeof(raycastTexture));
+		for(int i = 0; i<map.colorDepth; i++){textureMap[i]=NULL;}
 		raycastTexture wall = raycastTexture(WALL_TEXUTRE_PATH);
 		textureMap[1] = &wall;
 
@@ -312,11 +272,11 @@ int main(int argc, char* argv[]) {
 				if(drawHeight > (SCREEN_HEIGHT/2)-5){drawHeight = (SCREEN_HEIGHT/2)-5;}
 
 
-				if(textureMap[target] != nullptr){	// Textured drawing
-					int xpix = xDist*wall.w;
-					float pixWidth = (SCREEN_HEIGHT -drawHeight*2)/(float)wall.h; 
-					for (int ypix = 0; ypix < wall.h; ypix++){
-						fbuff.drawVline(x, drawHeight+(pixWidth*ypix), drawHeight+(pixWidth*(ypix+1)), wall.getPixel(xpix,ypix).darken(255-side*128));
+				if(textureMap[target] != NULL){	// Textured drawing
+					int xpix = xDist*(*textureMap[target]).w;
+					float pixWidth = (SCREEN_HEIGHT -drawHeight*2)/(float)(*textureMap[target]).h; 
+					for (int ypix = 0; ypix < (*textureMap[target]).h; ypix++){
+						fbuff.drawVline(x, drawHeight+(pixWidth*ypix), drawHeight+(pixWidth*(ypix+1)), (*textureMap[target]).getPixel(xpix,ypix).darken(255-side*128));
 					}
 				}else{
 					fbuff.drawVline(x, drawHeight, SCREEN_HEIGHT-(drawHeight), map.getColor(target, side));
@@ -324,14 +284,15 @@ int main(int argc, char* argv[]) {
 			}
 			fbuff.pushFrame(renderer);
 
-			// Draw Minimap (0.08ms)
-			map.drawMap(renderer, player);
+			// Draw Minimap (7ms??)
+			// map.drawMap(renderer, player);
 			
 			// Draw flower (.2ms per object in frame)
-			drawObject(renderer, player, map, flower);
+			drawObject(renderer, player, map, flower, 20);
+
 			SDL_RenderPresent( renderer );
 
-
+			// Timing
 			Uint64 end = SDL_GetPerformanceCounter();
 			float elapsedMS = (end - start) / (float)SDL_GetPerformanceFrequency() * 1000.0f;
 			// Cap to 60 FPS
