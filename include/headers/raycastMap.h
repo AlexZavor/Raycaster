@@ -16,55 +16,30 @@ public:
     int colorDepth;
     int w;
     int h;
-    int* worldMap;
-    rgba32* colorMap;
+    rgba32* worldMap;
 public:
     raycastMap( const char* image){
         surface = IMG_Load(image);
         w = surface->w;
         h = surface->h;
-        worldMap = (int*)malloc(w*h*sizeof(int));
+        worldMap = (rgba32*)malloc(w*h*sizeof(rgba32));
         std::vector<rgba32> foundColors;
-        foundColors.push_back(rgba32(0,0,0));// color 0 is always black
         for(int x = 0; x < w*h; x++){
-            rgba32 pixel = (((rgba32*)surface->pixels)[x]);
+            rgba32 pixel = rgba32(((uint32_t*)surface->pixels)[x]);
+            worldMap[x] = pixel;
             bool found = false;
             for(unsigned int i = 0; i<foundColors.size(); i++){
                 if(pixel == foundColors.at(i)){
-                    worldMap[x] = i;
                     found = true;
                     break;
                 }
             }
             if(!found){
-                worldMap[x] = foundColors.size();
                 foundColors.push_back(pixel);
             }
         }
         // put found pixels into color map
         colorDepth = foundColors.size();
-        colorMap = (rgba32*)malloc(colorDepth*sizeof(rgba32));
-        for (int x = 0; x < colorDepth; x++){
-            colorMap[x] = foundColors.at(x);
-        }
-        
-        // for(int x = colorDepth; x >= 0; x--){
-        //     colorMap[x] = foundColors.back();
-        //     foundColors.pop_back();
-        // }
-        // printf("size of vector after - %d\n", foundColors.size());
-        // printf("size of rgba32 - %d\n", sizeof(rgba32));
-        // printf("size of int    - %d\n", sizeof(int));
-    }
-
-    rgba32 getColor(int color, bool shadow = false){
-        if(color>colorDepth){	// Error
-            return rgba32(255, 0, 189);
-        }
-        if(shadow){
-            return colorMap[color].darken(128);
-        }
-        return colorMap[color];
     }
 
     void drawMap(SDL_Renderer* renderer, raycastPlayer player){
@@ -98,8 +73,8 @@ public:
         SDL_RenderDrawPoint(renderer, player.pos.x*MMScale, player.pos.y*MMScale);
     }
 
-    int mapPoint(vect2d point){
-        return worldMap[(int)point.x+((int)point.y*w)];
+    rgba32 mapPoint(vect2d point){
+        return worldMap[(int)point.x+(((int)point.y)*w)];
     }
 };
 

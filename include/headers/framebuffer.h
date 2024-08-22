@@ -54,13 +54,13 @@ inline bool framebuffer::pushFrame(SDL_Renderer *renderer){
 }
 
 inline void framebuffer::drawVline(int x, int y1, int y2, rgba32 color){
-    // Clamps to screen
-    if(y1<0){y1=0;}
-    if(y2<0){y2=0;}
-    if(y1>screenHeight){y1=screenHeight;}
-    if(y2>screenHeight){y2=screenHeight;}
     // swap so y2 is always larger
     if(y2<y1){int y = y1; y1 = y2; y2 = y;}
+    // Clamps to screen
+    if(y1<0){y1=0;}
+    // if(y2<0){y2=0;}
+    // if(y1>screenHeight){y1=screenHeight;}
+    if(y2>screenHeight){y2=screenHeight;}
     // draw line
     for(int y = y1; y<y2; y++){
         frameBuffer[x+(y*screenWidth)] = color;

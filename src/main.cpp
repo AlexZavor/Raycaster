@@ -90,7 +90,7 @@ bool closeSDL(SDL_Window* window, SDL_Renderer* renderer, SDL_Texture* texture){
 
 
 void calcRay(raycastPlayer player, raycastMap map, 
-			 vect2d rayDir, float* dist, int* target, bool* side, float* xDist = NULL){
+			 vect2d rayDir, float* dist, rgba32* target, bool* side, float* xDist = NULL){
 	vect2d mapTile = vect2d((int)player.pos.x, (int)player.pos.y); //truncate to get start tile. 
 
 	// float slopeY = (rayDir.y*rayDir.y)/(rayDir.x*rayDir.x);
@@ -119,7 +119,7 @@ void calcRay(raycastPlayer player, raycastMap map,
 	}
 
 	// DDA raycast
-	while (map.mapPoint(mapTile) == 0){
+	while (map.mapPoint(mapTile) == rgba32(0)){
 		if(nextX < nextY){  // hits new X tile
 			*dist = nextX;
 			*side = false;
@@ -152,7 +152,7 @@ void drawObject(SDL_Renderer* renderer, raycastPlayer player, raycastMap map, ra
 
 	if(ang > view && ang < -view && player.dir.dotProduct(objectDir)<.5){// Check if in view
 		float dist = (objectDir).getMag();
-		float walldist; int tar; bool side;
+		float walldist; rgba32 tar; bool side;
 		calcRay(player,map,objectDir.normal().negative(),&walldist, &tar, &side);
 
 		if(dist<walldist){										// Check if not behind wall
@@ -186,13 +186,11 @@ int main(int argc, char* argv[]) {
 		framebuffer fbuff = framebuffer(texture, SCREEN_WIDTH, SCREEN_HEIGHT);
 		raycastMap map = raycastMap(MAP_PATH);
 		raycastPlayer player = raycastPlayer(vect2d(12,12));
-		raycastObject flower = raycastObject(vect2d(3,3), FLOWER_PATH);
+		raycastObject flower = raycastObject(renderer, vect2d(3,3), FLOWER_PATH);
 
 		// Textures
-		raycastTexture** textureMap = (raycastTexture**)malloc(map.colorDepth * sizeof(raycastTexture));
-		for(int i = 0; i<map.colorDepth; i++){textureMap[i]=NULL;}
-		raycastTexture wall = raycastTexture(WALL_TEXUTRE_PATH);
-		textureMap[1] = &wall;
+		std::vector<raycastTexture> textureMap;
+		textureMap.push_back(raycastTexture(WALL_TEXUTRE_PATH, rgba32(0,19,230)));
 
 		while(!quit){
 			Uint64 start = SDL_GetPerformanceCounter();
@@ -252,8 +250,8 @@ int main(int argc, char* argv[]) {
 			}
 
 			//Update player
-			if(fwrd){player.movePlayer(playerspeed); if(map.mapPoint(player.pos) != 0){player.movePlayer(-playerspeed);}}
-			if(back){player.movePlayer(-playerspeed); if(map.mapPoint(player.pos) != 0){player.movePlayer(playerspeed);}}
+			if(fwrd){player.movePlayer(playerspeed); if(map.mapPoint(player.pos) != rgba32(0)){player.movePlayer(-playerspeed);}}
+			if(back){player.movePlayer(-playerspeed); if(map.mapPoint(player.pos) != rgba32(0)){player.movePlayer(playerspeed);}}
 			if(rright){player.rotate(lookspeed);}
 			if(rleft){player.rotate(-lookspeed);}
 			
@@ -263,7 +261,7 @@ int main(int argc, char* argv[]) {
 				vect2d rayDir = player.dir - (player.U*cameraU);
 
 				float dist, xDist;
-				int target;
+				rgba32 target = rgba32(0);
 				bool side;
 
 				calcRay(player, map, rayDir.normal(), &dist, &target, &side, &xDist);
@@ -271,23 +269,31 @@ int main(int argc, char* argv[]) {
 				int drawHeight = (dist*WORLD_HEIGHT) - (abs(cameraU)*12);
 				if(drawHeight > (SCREEN_HEIGHT/2)-5){drawHeight = (SCREEN_HEIGHT/2)-5;}
 
+				// Find texture in map
+				int texture = -1;
+				for(unsigned int i = 0; i<textureMap.size(); i++){
+					if(textureMap.at(i).color == target){
+						texture = i;
+						break;
+					}
+				}
 
-				if(textureMap[target] != NULL){	// Textured drawing
-					int xpix = xDist*(*textureMap[target]).w;
-					float pixWidth = (SCREEN_HEIGHT -drawHeight*2)/(float)(*textureMap[target]).h; 
-					for (int ypix = 0; ypix < (*textureMap[target]).h; ypix++){
-						fbuff.drawVline(x, drawHeight+(pixWidth*ypix), drawHeight+(pixWidth*(ypix+1)), (*textureMap[target]).getPixel(xpix,ypix).darken(255-side*128));
+				if(texture != -1){	// Textured drawing
+					int xpix = xDist*(textureMap[texture]).w;
+					float pixWidth = (SCREEN_HEIGHT -drawHeight*2)/(float)(textureMap[texture]).h; 
+					for (int ypix = 0; ypix < (textureMap[texture]).h; ypix++){
+						fbuff.drawVline(x, drawHeight+(pixWidth*ypix), drawHeight+(pixWidth*(ypix+1)), (textureMap[texture]).getPixel(xpix,ypix).darken(255-side*128));
 					}
 				}else{
-					fbuff.drawVline(x, drawHeight, SCREEN_HEIGHT-(drawHeight), map.getColor(target, side));
+					fbuff.drawVline(x, drawHeight, SCREEN_HEIGHT-(drawHeight), target);
 				}
 			}
 			fbuff.pushFrame(renderer);
 
-			// Draw Minimap (7ms??)
-			// map.drawMap(renderer, player);
+			// Draw Minimap (.1ms)
+			map.drawMap(renderer, player);
 			
-			// Draw flower (.2ms per object in frame)
+			// Draw flower (.002ms per object in frame)
 			drawObject(renderer, player, map, flower, 20);
 
 			SDL_RenderPresent( renderer );

@@ -11,11 +11,12 @@ public:
     uint8_t r;
     uint8_t a;
 
+    rgba32(){r=0;g=0;b=0;a=255;}
     rgba32(uint32_t color){
-        r = color              >> 24;
-        g = (color&0x00FF0000) >> 16;
-        b = (color&0x0000FF00) >> 8;
-        a = (color&0x000000FF);
+        a = color              >> 24;
+        b = (color&0x00FF0000) >> 16;
+        g = (color&0x0000FF00) >> 8;
+        r = (color&0x000000FF);
     }
     rgba32(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255){
         this->r = r;
@@ -31,7 +32,10 @@ public:
         return rgba32(newR, newG, newB, a);
     }
     bool operator==(rgba32 const& obj) {
-        return ((obj.r == r) && (obj.g == g) && (obj.b == b) && (obj.a == a));
+        return ((obj.r == r) && (obj.g == g) && (obj.b == b));
+    }
+    bool operator!=(rgba32 const& obj) {
+        return ((obj.r != r) || (obj.g != g) || (obj.b != b));
     }
 };
 
