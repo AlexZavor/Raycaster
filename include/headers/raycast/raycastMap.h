@@ -1,13 +1,12 @@
 #ifndef RAYCASTMAP_H
 #define RAYCASTMAP_H
 
-// #include <vector>
-// #include <algorithm>
 #include "SDL.h"
 #include "SDL_image.h"
 #include "rgba.h"
 #include "vect2d.h"
 #include "raycastPlayer.h"
+
 
 class raycastMap {
 private:
@@ -17,8 +16,10 @@ public:
     int w;
     int h;
     rgba32* worldMap;
+    int worldHeight;
 public:
-    raycastMap( const char* image){
+    raycastMap( const char* image, int worldHeight){
+        this->worldHeight = worldHeight;
         surface = IMG_Load(image);
         w = surface->w;
         h = surface->h;

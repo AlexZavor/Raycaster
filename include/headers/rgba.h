@@ -26,10 +26,10 @@ public:
     }
     rgba32 darken(uint8_t value){
         float amount = value/255.0f;
-        uint8_t newR = r*amount;
-        uint8_t newG = g*amount;
-        uint8_t newB = b*amount;
-        return rgba32(newR, newG, newB, a);
+        // uint8_t newR = r*amount;
+        // uint8_t newG = g*amount;
+        // uint8_t newB = b*amount;
+        return rgba32(r*amount, g*amount, b*amount, a);
     }
     bool operator==(rgba32 const& obj) {
         return ((obj.r == r) && (obj.g == g) && (obj.b == b));

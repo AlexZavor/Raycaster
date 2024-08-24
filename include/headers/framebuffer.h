@@ -10,11 +10,11 @@ class framebuffer
 {
 private:
     SDL_Texture* texture;
-    int screenWidth;
-    int screenHeight;
     int32_t pitch;
     uint32_t* pixelBuffer = nullptr;
 public:
+    int screenWidth;
+    int screenHeight;
     rgba32* frameBuffer = nullptr;
 public:
     framebuffer(SDL_Texture* texture, int screenWidth, int screenHeight);

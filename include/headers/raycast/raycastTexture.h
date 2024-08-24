@@ -10,15 +10,18 @@ private:
     SDL_Surface* texture;
 public:
     rgba32* pixels;
-    rgba32 color;
+    rgba32 color;   // Color that the texture replaces
     int w;
     int h;
 public:
     raycastTexture(const char* texturePath, rgba32 color){
 		texture = IMG_Load(texturePath);
-		pixels = (rgba32*)texture->pixels;
         w = texture->w;
         h = texture->h;
+        pixels = (rgba32*)malloc(w*h*sizeof(rgba32));
+        for(int i = 0; i < w*h; i++){
+		    pixels[i] = rgba32(((uint32_t*)texture->pixels)[i]);
+        }
         this->color = color;
     }
     rgba32 getPixel(int x, int y){

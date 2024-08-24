@@ -7,6 +7,8 @@
 #define ZERO_VECT (vect2d(0,0))
 #define NORMAL_VECT (vect2d(1,0))
 
+#define PI_F (3.14159265359f)
+
 class vect2d {
 public:
     float x;
