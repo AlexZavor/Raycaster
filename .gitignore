@@ -4,6 +4,8 @@
 RAYCASTER
 
 .vscode/
+/build/Testing
+compile_commands.json
 
 #Cmake
 CMakeFiles/
