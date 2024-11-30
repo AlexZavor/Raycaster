@@ -1,26 +1,5 @@
-#ifndef FRAMEBUFFER_H
-#define FRAMEBUFFER_H
-
-// Credit to DOOMReboot on Github for the pixel pusher system! https://github.com/DOOMReboot
-
-#include "SDL.h"
-#include "rgba.h"
-
-class framebuffer
-{
-private:
-    SDL_Texture* texture;
-    int32_t pitch;
-    uint32_t* pixelBuffer = nullptr;
-public:
-    int screenWidth;
-    int screenHeight;
-    rgba32* frameBuffer = nullptr;
-public:
-    framebuffer(SDL_Texture* texture, int screenWidth, int screenHeight);
-    bool pushFrame(SDL_Renderer* renderer);
-    void drawVline(int x, int y1, int y2, rgba32 color);
-};
+#include "my_tools/framebuffer.h"
+#include <stdio.h>
 
 framebuffer::framebuffer(SDL_Texture* texture, int screenWidth, int screenHeight){
     this->texture = texture;
@@ -29,7 +8,7 @@ framebuffer::framebuffer(SDL_Texture* texture, int screenWidth, int screenHeight
     frameBuffer = (rgba32*)malloc(screenWidth*screenHeight*sizeof(rgba32)); //yay memory allocation
 }
 
-inline bool framebuffer::pushFrame(SDL_Renderer *renderer){
+bool framebuffer::pushFrame(SDL_Renderer *renderer){
     // Lock the memory in order to write our Back Buffer image to it
     if (!SDL_LockTexture(texture, NULL, (void**)&pixelBuffer, &pitch))
     {
@@ -53,13 +32,11 @@ inline bool framebuffer::pushFrame(SDL_Renderer *renderer){
     return false;
 }
 
-inline void framebuffer::drawVline(int x, int y1, int y2, rgba32 color){
+void framebuffer::drawVline(int x, int y1, int y2, rgba32 color){
     // swap so y2 is always larger
     if(y2<y1){int y = y1; y1 = y2; y2 = y;}
     // Clamps to screen
     if(y1<0){y1=0;}
-    // if(y2<0){y2=0;}
-    // if(y1>screenHeight){y1=screenHeight;}
     if(y2>screenHeight){y2=screenHeight;}
     // draw line
     for(int y = y1; y<y2; y++){
@@ -67,4 +44,7 @@ inline void framebuffer::drawVline(int x, int y1, int y2, rgba32 color){
     }
 }
 
-#endif //FRAMEBUFFER_H
+framebuffer::~framebuffer()
+{
+    free(frameBuffer);
+}

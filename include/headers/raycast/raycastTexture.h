@@ -3,7 +3,7 @@
 
 #include "SDL.h"
 #include "SDL_image.h"
-#include "rgba.h"
+#include "my_tools/rgba.h"
 
 class raycastTexture{
 private:

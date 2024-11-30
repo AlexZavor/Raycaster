@@ -4,7 +4,7 @@
 #include "raycast/raycastMap.h"
 #include "raycast/raycastPlayer.h"
 
-void calcRay(raycastPlayer player, raycastMap map, 
+void calcRay(raycastPlayer player, raycastMap* map, 
 			 vect2d rayDir, float* dist, rgba32* target, bool* side, float* xDist = NULL){
 	vect2d mapTile = vect2d((int)player.pos.x, (int)player.pos.y); //truncate to get start tile. 
 
@@ -34,7 +34,7 @@ void calcRay(raycastPlayer player, raycastMap map,
 	}
 
 	// DDA raycast
-	while (map.mapPoint(mapTile) == rgba32(0)){
+	while (map->mapPoint(mapTile) == rgba32(0)){
 		if(nextX < nextY){  // hits new X tile
 			*dist = nextX;
 			*side = false;
@@ -53,7 +53,7 @@ void calcRay(raycastPlayer player, raycastMap map,
 		*xDist = *side ? newPoint.x-(int)newPoint.x : newPoint.y-(int)newPoint.y;
 	}
 
-	*target = map.mapPoint(mapTile);
+	*target = map->mapPoint(mapTile);
 	return;
 }
 

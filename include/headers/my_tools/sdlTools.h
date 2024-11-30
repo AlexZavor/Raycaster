@@ -4,8 +4,7 @@
 #include "SDL.h"
 #include "SDL_image.h"
 #include "SDL_ttf.h"
-#include "stdio.h"
-#include "globals.h"
+#include "my_tools/rgba.h"
 
 //Input map
 typedef struct{
@@ -17,14 +16,14 @@ typedef struct{
 } input;
 
 
-bool initializeSDL(SDL_Window** window, SDL_Renderer** renderer, SDL_Texture** texture){
+bool initializeSDL(SDL_Window** window, SDL_Renderer** renderer, SDL_Texture** texture, int width, int height){
 	//Initialize SDL
 	if( SDL_Init( SDL_INIT_VIDEO ) < 0 ) {
 		printf( "SDL could not initialize! SDL_Error: %s\n", SDL_GetError() );
 		return 0;
 	}
 	//Create window
-	*window = SDL_CreateWindow( "RayCaster", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
+	*window = SDL_CreateWindow( "RayCaster", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, SDL_WINDOW_SHOWN );
 	if( *window == NULL ) {
 		printf( "Window could not be created! SDL_Error: %s\n", SDL_GetError() );
 		return 0;
@@ -35,7 +34,7 @@ bool initializeSDL(SDL_Window** window, SDL_Renderer** renderer, SDL_Texture** t
 		printf( "Renderer could not be created! SDL Error: %s\n", SDL_GetError() );
 	}
 	//Create texture to render pixels to.
-	*texture = SDL_CreateTexture(*renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, SCREEN_WIDTH, SCREEN_HEIGHT);
+	*texture = SDL_CreateTexture(*renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, width, height);
 	if( *texture == NULL ) {
 		printf( "Texture could not be created! SDL Error: %s\n", SDL_GetError() );
 	}
@@ -121,6 +120,13 @@ void handleInput(SDL_Event e, input* in){
             break;
         }
     }
+}
+
+void sdlTools_SetRenderDrawColorRGBA(SDL_Renderer* renderer, rgba32 color, bool shadow = false){
+    if(shadow){
+        color = color.darken(128);
+    }
+    SDL_SetRenderDrawColor(renderer, color.r,color.g,color.b,color.a);
 }
 
 #endif //SDLTOOLS_H

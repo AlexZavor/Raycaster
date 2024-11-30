@@ -1,13 +1,16 @@
 #include <stdio.h>
-#include "globals.h"
-#include "sdlTools.h"
+#include "my_tools/sdlTools.h"
 #include "raycastEngine.h"
+#include <vector>
 
 // #define AVGFPS
 #ifdef AVGFPS
 	static double maxFtime = 0;
 	static long frames = 0;
 #endif
+
+#define SCREEN_WIDTH 1280
+#define SCREEN_HEIGHT 720
 
 #define MAP_PATH "Res/Map.png"
 #define FLOWER_PATH "Res/Flower.png"
@@ -25,19 +28,20 @@ int main(int argc, char* argv[]) {
 	// Input map
 	input in;
 
-	if(initializeSDL(&window, &renderer, &texture)){
+	if(initializeSDL(&window, &renderer, &texture, SCREEN_WIDTH, SCREEN_HEIGHT)){
 		// required for the game
 		framebuffer fbuff = framebuffer(texture, SCREEN_WIDTH, SCREEN_HEIGHT);
-		raycastMap map = raycastMap(MAP_PATH, 20);
-		raycastPlayer player = raycastPlayer(vect2d(12,12));
+		raycastMap map = raycastMap();
+		raycast_LoadMap(&map, "Res/TestWorld.lvl");
+		raycastPlayer player = raycastPlayer(vect2d(2,2));
 
 		// Objects
 		std::vector<raycastObject> objectVector;
-		objectVector.push_back(raycastObject(renderer, vect2d(3,3), FLOWER_PATH));
+		// objectVector.push_back(raycastObject(renderer, vect2d(3,3), FLOWER_PATH));
 
 		// Textures
 		std::vector<raycastTexture> textureMap;
-		textureMap.push_back(raycastTexture(WALL_TEXUTRE_PATH, rgba32(0,19,230)));
+		// textureMap.push_back(raycastTexture(WALL_TEXUTRE_PATH, rgba32(0,19,230)));
 
 		while(!in.quit){
 			// Frame Timer
@@ -50,15 +54,19 @@ int main(int argc, char* argv[]) {
 			updatePlayer(&player, in, map);
 			
 			//Update screen (Raycasting)
-			raycastScreen( player, map, fbuff, &textureMap );
+			Uint64 quickcountS = SDL_GetPerformanceCounter();
+			raycastScreen( player, &map, &fbuff, &textureMap );
+			Uint64 quickcountE = SDL_GetPerformanceCounter();
+			printf("quickcount - %f\n",(quickcountE - quickcountS) / (float)SDL_GetPerformanceFrequency() * 1000.0f);
 			fbuff.pushFrame( renderer );
 
 			// Draw Minimap (.1ms)
-			map.drawMap( renderer, player );
+			if(DRAW_MAP)
+				map.drawMap( renderer, player );
 			
 			// Draw Objects (very fast)
-			for(auto obj : objectVector){
-				obj.drawObject(renderer, player, map);
+			for(unsigned int i = 0; i < objectVector.size(); i++){
+				objectVector[i].drawObject(renderer, player, map);
 			}
 
 			SDL_RenderPresent( renderer );
@@ -75,7 +83,6 @@ int main(int argc, char* argv[]) {
 				SDL_Delay((Uint32)(16.666f - elapsedMS));
 			}else{printf("slowframe - %f\n", elapsedMS);}
 		}
-
 	}
 
 	#ifdef AVGFPS

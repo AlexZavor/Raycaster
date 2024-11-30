@@ -1,11 +1,11 @@
 #ifndef RAYCASTMAP_H
 #define RAYCASTMAP_H
 
-#include "SDL.h"
-#include "SDL_image.h"
-#include "rgba.h"
-#include "vect2d.h"
+#include "my_tools/rgba.h"
+#include "my_tools/vect2d.h"
 #include "raycastPlayer.h"
+#include "raycast/raycastConfig.h"
+#include <vector>
 
 
 class raycastMap {
@@ -16,10 +16,9 @@ public:
     int w;
     int h;
     rgba32* worldMap;
-    int worldHeight;
 public:
-    raycastMap( const char* image, int worldHeight){
-        this->worldHeight = worldHeight;
+    raycastMap(){}
+    raycastMap( const char* image){
         surface = IMG_Load(image);
         w = surface->w;
         h = surface->h;
@@ -42,36 +41,48 @@ public:
         // put found pixels into color map
         colorDepth = foundColors.size();
     }
+    raycastMap( int x, int y, char* worldArray, int pallet_size, char* pallet){
+        surface = NULL;
+        w = x;
+        h = y;
+        worldMap = (rgba32*)malloc(w*h*sizeof(rgba32));
+        for(int x_p = 0; x_p < w*h; x_p++){
+            uint8_t* color = (uint8_t*)&pallet[worldArray[x_p]*4];
+            rgba32 pixel = rgba32(*color, *(color+1), *(color+2), *(color+3));
+            worldMap[x_p] = pixel;
+        }
+        // put found pixels into color map
+        colorDepth = pallet_size;
+    }
 
     void drawMap(SDL_Renderer* renderer, raycastPlayer player){
-        int MMScale = 6;
-        // Draw map
-        SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
-        SDL_Rect texr; texr.x = 0; texr.y = 0; 
-                        texr.w = surface->w*MMScale; texr.h = surface->h*MMScale; 
-        SDL_RenderCopy(renderer, texture, NULL, &texr);
+        // Draw map (if map is texture)
+        // SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+        // SDL_Rect texr; texr.x = 0; texr.y = 0; 
+        //                 texr.w = surface->w*MAP_SCALE; texr.h = surface->h*MAP_SCALE; 
+        // SDL_RenderCopy(renderer, texture, NULL, &texr);
         // Old draw method
-        // for (int x = 0; x < w; x++){
-        //     for (int y = 0; y < h; y++){
-        //         RGBA_SetRenderDrawColor(renderer, getColor(mapPoint(vect2d(x,y))));
-        //         SDL_Rect rect; rect.x = x*MMScale; rect.y = y*MMScale;
-        //                         rect.w = MMScale; rect.h = MMScale;
-        //         SDL_RenderFillRect(renderer, &rect);
-        //     }
-        // }
+        for (int x = 0; x < w; x++){
+            for (int y = 0; y < h; y++){
+                sdlTools_SetRenderDrawColorRGBA(renderer, mapPoint(vect2d(x,y)));
+                SDL_Rect rect; rect.x = x*MAP_SCALE; rect.y = y*MAP_SCALE;
+                                rect.w = MAP_SCALE; rect.h = MAP_SCALE;
+                SDL_RenderFillRect(renderer, &rect);
+            }
+        }
         // Draw view
-        RGBA_SetRenderDrawColor(renderer, rgba32(219, 98, 235));
+        sdlTools_SetRenderDrawColorRGBA(renderer, rgba32(219, 98, 235));
         SDL_Point viewPoints[3]; 
-        viewPoints[0].x = (player.pos+player.dir+player.U).x*MMScale;
-        viewPoints[0].y = (player.pos+player.dir+player.U).y*MMScale;
-        viewPoints[1].x = player.pos.x*MMScale;
-        viewPoints[1].y = player.pos.y*MMScale;
-        viewPoints[2].x = (player.pos+player.dir-player.U).x*MMScale;
-        viewPoints[2].y = (player.pos+player.dir-player.U).y*MMScale;
+        viewPoints[0].x = (player.pos+player.dir+player.U).x*MAP_SCALE;
+        viewPoints[0].y = (player.pos+player.dir+player.U).y*MAP_SCALE;
+        viewPoints[1].x = player.pos.x*MAP_SCALE;
+        viewPoints[1].y = player.pos.y*MAP_SCALE;
+        viewPoints[2].x = (player.pos+player.dir-player.U).x*MAP_SCALE;
+        viewPoints[2].y = (player.pos+player.dir-player.U).y*MAP_SCALE;
         SDL_RenderDrawLines(renderer, viewPoints, 3);
         // Draw player
-        RGBA_SetRenderDrawColor(renderer, rgba32(255, 255, 255));
-        SDL_RenderDrawPoint(renderer, player.pos.x*MMScale, player.pos.y*MMScale);
+        sdlTools_SetRenderDrawColorRGBA(renderer, rgba32(255, 255, 255));
+        SDL_RenderDrawPoint(renderer, player.pos.x*MAP_SCALE, player.pos.y*MAP_SCALE);
     }
 
     rgba32 mapPoint(vect2d point){

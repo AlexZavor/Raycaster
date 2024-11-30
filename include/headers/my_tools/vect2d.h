@@ -2,12 +2,11 @@
 #define VECT2D_H
 
 #include <math.h>
-#include <random>
 
 #define ZERO_VECT (vect2d(0,0))
 #define NORMAL_VECT (vect2d(1,0))
 
-#define PI_F (3.14159265359f)
+#define PI_F M_PI
 
 class vect2d {
 public:

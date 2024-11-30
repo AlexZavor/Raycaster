@@ -1,14 +1,11 @@
 #ifndef RAYCASTOBJECT_H
 #define RAYCASTOBJECT_H
 
-#include "rgba.h"
-#include "vect2d.h"
-#include "SDL_image.h"
-#include "SDL.h"
-#include "globals.h"
+#include "my_tools/rgba.h"
+#include "my_tools/vect2d.h"
 #include "raycast/raycastRayCalc.h"
+#include "raycast/raycastConfig.h"
 
-#define OBJ_DEFAULT_SCALE 20
 
 class raycastObject
 {
@@ -43,6 +40,10 @@ raycastObject::raycastObject(SDL_Renderer* renderer, vect2d position, const char
 }
 
 void raycastObject::drawObject(SDL_Renderer* renderer, raycastPlayer player, raycastMap map) {
+    static SDL_DisplayMode DM = {0};
+    if(DM.h == 0){SDL_GetCurrentDisplayMode(0, &DM);}
+    static int width = DM.w;
+    static int height = DM.h;
 	vect2d objectDir = (player.pos-pos); 
 	vect2d weirdPlayer = player.dir;
 	weirdPlayer.rotate(PI_F/2);	// Makes ratio of dot product more useful for mapping across screen
@@ -50,17 +51,17 @@ void raycastObject::drawObject(SDL_Renderer* renderer, raycastPlayer player, ray
 	float ang = weirdPlayer.dotProduct(objectDir);
 	float view = weirdPlayer.normal().dotProduct((player.dir+player.U).normal());
 
-	if(ang > view && ang < -view && player.dir.dotProduct(objectDir)<.5){// Check if in view
+	if(ang > view && ang < -view && player.dir.dotProduct(objectDir)<.5){   // Check if in view
 		float dist = (objectDir).getMag();
 		float walldist; rgba32 tar; bool side;
-		calcRay(player,map,objectDir.normal().negative(),&walldist, &tar, &side);
+		calcRay(player,&map,objectDir.normal().negative(),&walldist, &tar, &side);
 
-		if(dist<walldist){										// Check if not behind wall
-			int drawX = -(ang * (SCREEN_WIDTH) / (abs(view*2))) + SCREEN_WIDTH/2 - (w/2);
-			int drawHeight = (dist*map.worldHeight) +h*scale/dist;
-			if(drawHeight > (SCREEN_HEIGHT/2)+(h/2)){drawHeight = (SCREEN_HEIGHT/2)+(h/2);}
+		if(dist<walldist){										            // Check if not behind wall
+			int drawX = -(ang * (width) / (abs(view*2))) + width/2 - (w/2);
+			int drawHeight = (dist*WORLD_HEIGHT) +h*scale/dist;
+			if(drawHeight > (height/2)+(h/2)){drawHeight = (height/2)+(h/2);}
 
-			SDL_Rect texr; texr.x = drawX; texr.y = SCREEN_HEIGHT - drawHeight; 
+			SDL_Rect texr; texr.x = drawX; texr.y = height - drawHeight; 
 						   texr.w = w*scale/dist; texr.h = h*scale/dist; 
 			SDL_RenderCopy(renderer, getTexture(renderer), NULL, &texr);
 		}
