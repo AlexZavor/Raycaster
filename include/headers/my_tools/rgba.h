@@ -1,5 +1,6 @@
 #ifndef RGBA_H
 #define RGBA_H
+#pragma once
 
 #include <stdint.h>
 

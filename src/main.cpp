@@ -32,8 +32,11 @@ int main(int argc, char* argv[]) {
 		// required for the game
 		framebuffer fbuff = framebuffer(texture, SCREEN_WIDTH, SCREEN_HEIGHT);
 		raycastMap map = raycastMap();
-		raycast_LoadMap(&map, "Res/TestWorld.lvl");
+		// raycast_LoadMap(&map, "Res/TestWorld.lvl");
 		raycastPlayer player = raycastPlayer(vect2d(2,2));
+
+		// load lvl file
+		raycast_loadFile(&map, &player, "Res/TestWorld.lvl");
 
 		// Objects
 		std::vector<raycastObject> objectVector;
@@ -54,10 +57,7 @@ int main(int argc, char* argv[]) {
 			updatePlayer(&player, in, map);
 			
 			//Update screen (Raycasting)
-			Uint64 quickcountS = SDL_GetPerformanceCounter();
 			raycastScreen( player, &map, &fbuff, &textureMap );
-			Uint64 quickcountE = SDL_GetPerformanceCounter();
-			printf("quickcount - %f\n",(quickcountE - quickcountS) / (float)SDL_GetPerformanceFrequency() * 1000.0f);
 			fbuff.pushFrame( renderer );
 
 			// Draw Minimap (.1ms)
@@ -79,8 +79,8 @@ int main(int argc, char* argv[]) {
 				maxFtime += elapsedMS;
 			#endif
 			// Cap to 60 FPS
-			if(16.666f - elapsedMS > 0){
-				SDL_Delay((Uint32)(16.666f - elapsedMS));
+			if(16.666f*2 - elapsedMS > 0){
+				SDL_Delay((Uint32)(16.666f*2 - elapsedMS));
 			}else{printf("slowframe - %f\n", elapsedMS);}
 		}
 	}

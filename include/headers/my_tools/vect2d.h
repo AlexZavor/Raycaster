@@ -1,5 +1,6 @@
 #ifndef VECT2D_H
 #define VECT2D_H
+#pragma once
 
 #include <math.h>
 

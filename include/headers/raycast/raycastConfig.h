@@ -6,17 +6,17 @@
 #include "SDL_image.h"
 
 // Player settings
-#define PLAYER_SPEED (0.05f)
+#define PLAYER_SPEED (0.1f)
 #define LOOK_SPEED (0.05f)
 
 // World drawing settings
-#define WORLD_HEIGHT (20)
+#define WORLD_HEIGHT (25)
 
 // Minimap drawing
 #define DRAW_MAP true
-#define MAP_SCALE 5
+#define MAP_SCALE 2
 
 // Object settings
-#define OBJ_DEFAULT_SCALE 20
+#define OBJ_DEFAULT_SCALE 100
 
 #endif // RAYCASTCONFIG_H

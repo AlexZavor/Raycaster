@@ -3,6 +3,7 @@
 
 #include "my_tools/rgba.h"
 #include "my_tools/vect2d.h"
+#include "my_tools/sdlTools.h"
 #include "raycastPlayer.h"
 #include "raycast/raycastConfig.h"
 #include <vector>
@@ -41,15 +42,15 @@ public:
         // put found pixels into color map
         colorDepth = foundColors.size();
     }
-    raycastMap( int x, int y, char* worldArray, int pallet_size, char* pallet){
+    raycastMap( int x, int y, char* worldArray, int pallet_size, rgba32* pallet){
         surface = NULL;
         w = x;
         h = y;
         worldMap = (rgba32*)malloc(w*h*sizeof(rgba32));
         for(int x_p = 0; x_p < w*h; x_p++){
-            uint8_t* color = (uint8_t*)&pallet[worldArray[x_p]*4];
-            rgba32 pixel = rgba32(*color, *(color+1), *(color+2), *(color+3));
-            worldMap[x_p] = pixel;
+            // uint8_t color = pallet[worldArray[x_p]];
+            // rgba32 pixel = rgba32(*color, *(color+1), *(color+2), *(color+3));
+            worldMap[x_p] = pallet[(int)worldArray[x_p]];
         }
         // put found pixels into color map
         colorDepth = pallet_size;

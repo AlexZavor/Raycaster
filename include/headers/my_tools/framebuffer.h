@@ -1,5 +1,6 @@
 #ifndef FRAMEBUFFER_H
 #define FRAMEBUFFER_H
+#pragma once
 
 // Credit to DOOMReboot on Github for the pixel pusher system! https://github.com/DOOMReboot
 

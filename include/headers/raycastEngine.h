@@ -24,7 +24,7 @@ void raycastScreen(raycastPlayer player, raycastMap* map, framebuffer* fbuff, st
 
         calcRay(player, map, rayDir.normal(), &dist, &target, &side, &xDist);
 
-        int drawHeight = (dist*WORLD_HEIGHT) - 200;
+        int drawHeight = (dist*WORLD_HEIGHT) - 80;
         if(drawHeight > (s_height/2)-5){drawHeight = (s_height/2)-5;}
 
         // Find texture in map
