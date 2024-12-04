@@ -52,7 +52,7 @@ bool closeSDL(SDL_Window* window, SDL_Renderer* renderer, SDL_Texture* texture){
 	return true;
 }
 
-void handleInput(SDL_Event e, input* in){
+void sdlTools_handleInput(SDL_Event e, input* in){
     while( SDL_PollEvent( &e ) != 0 ) {
         switch (e.type){
             
@@ -78,6 +78,9 @@ void handleInput(SDL_Event e, input* in){
                 case SDLK_d:
                     in->rright = true;
                 break;
+                case SDLK_RETURN:
+                    in->sel = true;
+                break;
                 default:
                 break;
             }
@@ -95,6 +98,9 @@ void handleInput(SDL_Event e, input* in){
                 break;
                 case SDLK_d:
                     in->rright = false;
+                break;
+                case SDLK_RETURN:
+                    in->sel = false;
                 break;
                 default:
                 break;

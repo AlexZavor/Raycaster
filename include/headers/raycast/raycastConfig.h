@@ -6,7 +6,7 @@
 #include "SDL_image.h"
 
 // Player settings
-#define PLAYER_SPEED (0.1f)
+#define PLAYER_SPEED (0.05f)
 #define LOOK_SPEED (0.05f)
 
 // World drawing settings
@@ -14,7 +14,7 @@
 
 // Minimap drawing
 #define DRAW_MAP true
-#define MAP_SCALE 2
+#define MAP_SCALE 5
 
 // Object settings
 #define OBJ_DEFAULT_SCALE 100

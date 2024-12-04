@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include "my_tools/sdlTools.h"
+#include "my_tools/sdlFileSelector.h"
 #include "raycastEngine.h"
 #include <vector>
+#include <string>
 
 // #define AVGFPS
 #ifdef AVGFPS
@@ -36,7 +38,21 @@ int main(int argc, char* argv[]) {
 		raycastPlayer player = raycastPlayer(vect2d(2,2));
 
 		// load lvl file
-		raycast_loadFile(&map, &player, "Res/TestWorld.lvl");
+		char* filename = (char*)malloc(FILENAME_MAX);
+		sdlFileSelector_selectDir(renderer, &filename, "Res/Worlds/");
+		printf("file : %s\n", filename);
+		if(filename[0] == 0){
+			printf("Could not open file\n");
+			exit(1);
+		}else{
+			if(SDL_strstr(filename, ".lvl") != NULL){
+				raycast_loadFile(&map, &player, filename);
+			}else{
+				printf("not .lvl file\n");
+				exit(1);
+			}
+		}
+		free(filename);
 
 		// Objects
 		std::vector<raycastObject> objectVector;
@@ -51,7 +67,7 @@ int main(int argc, char* argv[]) {
 			Uint64 start = SDL_GetPerformanceCounter();
 
 			// Handle events on queue (Input)
-			handleInput(e, &in);
+			sdlTools_handleInput(e, &in);
 
 			//Update player
 			updatePlayer(&player, in, map);

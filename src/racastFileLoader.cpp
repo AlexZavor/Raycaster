@@ -3,14 +3,14 @@
 #define S_BUF_SIZE 128
 
 void raycast_LoadPlayer(raycastPlayer* player, FILE* fp){
-    char* buff = (char*)malloc(S_BUF_SIZE);
+    float* buff = (float*)malloc(S_BUF_SIZE);
 
     // Output vars
-    uint8_t x;
-    uint8_t y;
+    float x;
+    float y;
 
     
-    fread(buff, 1, 2, fp);
+    fread(buff, 4, 2, fp);
     x = buff[0];
     y = buff[1];
 
@@ -59,6 +59,8 @@ void raycast_loadFile(raycastMap* map, raycastPlayer* player, const char* file_d
 
     // State for reading file
     int state = 0;
+    bool foundPlayer = false;
+    bool foundWorld = false;
     // buffer for reading in
     char* buff = (char*)malloc(S_BUF_SIZE);
     while(fread(buff, 1, 1, fp)){
@@ -82,6 +84,7 @@ void raycast_loadFile(raycastMap* map, raycastPlayer* player, const char* file_d
             if(buff[0] == 'D'){
                 // Found map
                 raycast_LoadMap(map,fp);
+                foundWorld = true;
             }
             state = 0;
             break;
@@ -93,6 +96,7 @@ void raycast_loadFile(raycastMap* map, raycastPlayer* player, const char* file_d
             if(buff[0] == 'R'){
                 // Found player
                 raycast_LoadPlayer(player,fp);
+                foundPlayer = true;
             }
             state = 0;
             break;
@@ -102,6 +106,11 @@ void raycast_loadFile(raycastMap* map, raycastPlayer* player, const char* file_d
             break;
         }
     }
-    
+
     free(buff);
+
+    if(!foundPlayer || !foundWorld){
+        printf("File did not have needed components\n");
+        exit(1);
+    }
 }
