@@ -5,11 +5,13 @@
 #include "SDL_image.h"
 #include "my_tools/rgba.h"
 
+#include <stdio.h>
+
 class raycastTexture{
 private:
     SDL_Surface* texture;
-public:
     rgba32* pixels;
+public:
     rgba32 color;   // Color that the texture replaces
     int w;
     int h;
@@ -24,8 +26,19 @@ public:
         }
         this->color = color;
     }
+    raycastTexture(int t_w, int t_h, rgba32* t_pixels, rgba32 repl_color){
+        w = t_w;
+        h = t_h;
+        pixels = (rgba32*)malloc(w*h*sizeof(rgba32));
+        SDL_memcpy(pixels, t_pixels, w*h*sizeof(rgba32));
+        color = repl_color;
+    }
     rgba32 getPixel(int x, int y){
         return pixels[x + (y*w)];
+    }
+    ~raycastTexture(){
+        // Let freedom... not ring
+        // free(pixels);
     }
 };
 

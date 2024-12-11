@@ -16,6 +16,7 @@ public:
         this->dir = dir;
         this->U = U;
     }
+    raycastPlayer(){};
     void rotate(float angle){
         dir.rotate(angle); U.rotate(angle);
     }

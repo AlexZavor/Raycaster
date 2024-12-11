@@ -5,6 +5,7 @@
 #include "raycast/raycastObject.h"
 #include "raycast/raycastPlayer.h"
 #include "raycast/raycastTexture.h"
+#include "raycast/raycastTextureMap.h"
 #include "raycast/raycastRayCalc.h"
 #include "raycast/raycastFileLoader.h"
 #include "raycast/raycastConfig.h"
@@ -12,7 +13,7 @@
 #include "my_tools/sdlTools.h"
 
 
-void raycastScreen(raycastPlayer player, raycastMap* map, framebuffer* fbuff, std::vector<raycastTexture>* textureMap = NULL){
+void raycastScreen(raycastPlayer player, raycastMap* map, framebuffer* fbuff, raycastTextureMap* textureMap = NULL){
     static int s_height = fbuff->screenHeight;
     for(int x = 0; x < fbuff->screenWidth; x++){
         float cameraU = ((2 * x) / ((float)fbuff->screenWidth))-1;
@@ -31,7 +32,7 @@ void raycastScreen(raycastPlayer player, raycastMap* map, framebuffer* fbuff, st
         int texture = -1;
         if(textureMap != NULL ){
             for(unsigned int i = 0; i < textureMap->size(); i++){
-                if(textureMap->at(i).color == target){
+                if(textureMap->at(i)->color == target){
                     texture = i;
                     break;
                 }
@@ -39,11 +40,11 @@ void raycastScreen(raycastPlayer player, raycastMap* map, framebuffer* fbuff, st
         }
 
         if(texture != -1){	// Textured drawing
-            raycastTexture text = textureMap->at(texture);
-            int xpix = xDist*(text).w;
-            float pixWidth = (s_height -drawHeight*2)/(float)(text).h; 
-            for (int ypix = 0; ypix < (text).h; ypix++){
-                fbuff->drawVline(x, drawHeight+(pixWidth*ypix), drawHeight+(pixWidth*(ypix+1)), side ? text.getPixel(xpix,ypix).darken(128) : text.getPixel(xpix,ypix));
+            raycastTexture* text = textureMap->at(texture);
+            int xpix = (1-xDist)*(text->w);
+            float pixWidth = (s_height -drawHeight*2)/(float)(text->h); 
+            for (int ypix = 0; ypix < (text->h); ypix++){
+                fbuff->drawVline(x, drawHeight+(pixWidth*ypix), drawHeight+(pixWidth*(ypix+1)), side ? text->getPixel(xpix,ypix).darken(128) : text->getPixel(xpix,ypix));
             }
         }else{
             fbuff->drawVline(x, drawHeight, s_height-(drawHeight), side ? target.darken(128) : target);

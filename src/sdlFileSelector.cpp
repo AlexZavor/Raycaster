@@ -40,8 +40,8 @@ void sdlFileSelector_selectDir(SDL_Renderer* renderer, char** file_selected, con
 
         if (!file.is_dir)
         {
-            printf("%s", file.name);
-            printf("\n");
+            // printf("%s", file.name);
+            // printf("\n");
             files[file_index] = (char*)malloc(_TINYDIR_FILENAME_MAX);
             strcpy(files[file_index],file.name);
             file_index++;

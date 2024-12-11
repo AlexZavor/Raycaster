@@ -50,7 +50,40 @@ void raycast_LoadMap(raycastMap* map, FILE* fp){
     free(cp);
 }
 
-void raycast_loadFile(raycastMap* map, raycastPlayer* player, const char* file_dir){
+void raycast_LoadTextures(raycastTextureMap** textureMap, FILE* fp){
+
+    char* buff = (char*)malloc(S_BUF_SIZE);
+
+    uint8_t number_of_textures;
+
+    // Output vars
+    uint8_t w;
+    uint8_t h;
+    rgba32* color = (rgba32*)malloc(sizeof(rgba32));
+
+    fread(buff, 1, 1, fp);
+    number_of_textures = buff[0];
+
+    *textureMap = new raycastTextureMap(number_of_textures);
+
+    printf("textures - %d\n", number_of_textures);
+
+    for(int texture = 0; texture < number_of_textures; texture++){
+        fread(buff, 1, 2, fp);
+        w = buff[0];
+        h = buff[1];
+        rgba32* pixel_array = (rgba32*)malloc(w*h*sizeof(rgba32));
+        fread(pixel_array, sizeof(rgba32), w*h, fp);
+        fread(color, sizeof(rgba32), 1, fp);
+
+        (*textureMap)->push_back(raycastTexture(w, h, pixel_array, *color));
+
+        free(pixel_array);
+    }
+    free(color);
+}
+
+void raycast_loadFile(raycastMap* map, raycastPlayer* player, raycastTextureMap** textureMap, const char* file_dir){
     FILE* fp = fopen(file_dir, "r");
     if(fp == NULL){
         printf("Can't open %s\n", file_dir);
@@ -74,6 +107,8 @@ void raycast_loadFile(raycastMap* map, raycastPlayer* player, const char* file_d
         case 1:
             if(buff[0] == 'W'){state=2;}
             else if(buff[0] == 'P'){state=4;}
+            else if(buff[0] == 'T'){state=6;}
+            else if(buff[0] == 0){break;}
             else state = 0;
             break;
         case 2:
@@ -100,6 +135,18 @@ void raycast_loadFile(raycastMap* map, raycastPlayer* player, const char* file_d
             }
             state = 0;
             break;
+        case 6:
+            if(buff[0] == 'E'){state++;}
+            else state = 0;
+            break;
+        case 7:
+            if(buff[0] == 'X'){
+                // Found textures
+                raycast_LoadTextures(textureMap,fp);
+            }
+            state = 0;
+            break;
+
         
         default:
             printf("load map sm Err \n");

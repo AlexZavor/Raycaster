@@ -2,7 +2,6 @@
 #include "my_tools/sdlTools.h"
 #include "my_tools/sdlFileSelector.h"
 #include "raycastEngine.h"
-#include <vector>
 #include <string>
 
 // #define AVGFPS
@@ -34,8 +33,8 @@ int main(int argc, char* argv[]) {
 		// required for the game
 		framebuffer fbuff = framebuffer(texture, SCREEN_WIDTH, SCREEN_HEIGHT);
 		raycastMap map = raycastMap();
-		// raycast_LoadMap(&map, "Res/TestWorld.lvl");
-		raycastPlayer player = raycastPlayer(vect2d(2,2));
+		raycastPlayer player = raycastPlayer();
+		raycastTextureMap* textureMap = NULL;
 
 		// load lvl file
 		char* filename = (char*)malloc(FILENAME_MAX);
@@ -46,7 +45,7 @@ int main(int argc, char* argv[]) {
 			exit(1);
 		}else{
 			if(SDL_strstr(filename, ".lvl") != NULL){
-				raycast_loadFile(&map, &player, filename);
+				raycast_loadFile(&map, &player, &textureMap, filename);
 			}else{
 				printf("not .lvl file\n");
 				exit(1);
@@ -59,8 +58,7 @@ int main(int argc, char* argv[]) {
 		// objectVector.push_back(raycastObject(renderer, vect2d(3,3), FLOWER_PATH));
 
 		// Textures
-		std::vector<raycastTexture> textureMap;
-		// textureMap.push_back(raycastTexture(WALL_TEXUTRE_PATH, rgba32(0,19,230)));
+		// textureMap.push_back(raycastTexture(WALL_TEXUTRE_PATH, rgba32(0,15,255)));
 
 		while(!in.quit){
 			// Frame Timer
@@ -73,7 +71,7 @@ int main(int argc, char* argv[]) {
 			updatePlayer(&player, in, map);
 			
 			//Update screen (Raycasting)
-			raycastScreen( player, &map, &fbuff, &textureMap );
+			raycastScreen( player, &map, &fbuff, textureMap );
 			fbuff.pushFrame( renderer );
 
 			// Draw Minimap (.1ms)
