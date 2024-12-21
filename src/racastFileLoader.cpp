@@ -83,7 +83,41 @@ void raycast_LoadTextures(raycastTextureMap** textureMap, FILE* fp){
     free(color);
 }
 
-void raycast_loadFile(raycastMap* map, raycastPlayer* player, raycastTextureMap** textureMap, const char* file_dir){
+void raycast_LoadObjects(raycastObjectMap** objectMap, FILE* fp){
+    char* buff = (char*)malloc(S_BUF_SIZE);
+
+    uint8_t number_of_objects;
+
+    // Output vars
+    uint8_t w, h;
+    float x, y;
+    rgba32* color = (rgba32*)malloc(sizeof(rgba32));
+
+    fread(buff, 1, 1, fp);
+    number_of_objects = buff[0];
+
+    *objectMap = new raycastObjectMap(number_of_objects);
+
+    printf("objects - %d\n", number_of_objects);
+
+    for(int object = 0; object < number_of_objects; object++){
+        fread(buff, 1, 2, fp);
+        w = buff[0];
+        h = buff[1];
+        rgba32* pixel_array = (rgba32*)malloc(w*h*sizeof(rgba32));
+        fread(pixel_array, sizeof(rgba32), w*h, fp);
+        fread(&x, sizeof(float), 1, fp);
+        fread(&y, sizeof(float), 1, fp);
+        fread(color, sizeof(rgba32), 1, fp);
+
+        (*objectMap)->push_back(raycastObject(w, h, pixel_array, x, y, *color, OBJ_DEFAULT_SCALE));
+
+        free(pixel_array);
+    }
+    free(color);
+}
+
+void raycast_loadFile(raycastMap* map, raycastPlayer* player, raycastTextureMap** textureMap, raycastObjectMap** objectMap, const char* file_dir){
     FILE* fp = fopen(file_dir, "r");
     if(fp == NULL){
         printf("Can't open %s\n", file_dir);
@@ -95,7 +129,7 @@ void raycast_loadFile(raycastMap* map, raycastPlayer* player, raycastTextureMap*
     bool foundPlayer = false;
     bool foundWorld = false;
     // buffer for reading in
-    char* buff = (char*)malloc(S_BUF_SIZE);
+    char buff[1];
     while(fread(buff, 1, 1, fp)){
         switch (state)
         {
@@ -108,6 +142,7 @@ void raycast_loadFile(raycastMap* map, raycastPlayer* player, raycastTextureMap*
             if(buff[0] == 'W'){state=2;}
             else if(buff[0] == 'P'){state=4;}
             else if(buff[0] == 'T'){state=6;}
+            else if(buff[0] == 'O'){state=8;}
             else if(buff[0] == 0){break;}
             else state = 0;
             break;
@@ -146,6 +181,18 @@ void raycast_loadFile(raycastMap* map, raycastPlayer* player, raycastTextureMap*
             }
             state = 0;
             break;
+        case 8:
+            if(buff[0] == 'B'){state++;}
+            else state = 0;
+            break;
+        case 9:
+            if(buff[0] == 'J'){
+                // Found objects
+                printf("loading objects\n");
+                raycast_LoadObjects(objectMap,fp);
+            }
+            state = 0;
+            break;
 
         
         default:
@@ -153,8 +200,6 @@ void raycast_loadFile(raycastMap* map, raycastPlayer* player, raycastTextureMap*
             break;
         }
     }
-
-    free(buff);
 
     if(!foundPlayer || !foundWorld){
         printf("File did not have needed components\n");

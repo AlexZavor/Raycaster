@@ -5,8 +5,6 @@
 #include "SDL_image.h"
 #include "my_tools/rgba.h"
 
-#include <stdio.h>
-
 class raycastTexture{
 private:
     SDL_Surface* texture;

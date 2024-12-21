@@ -3,6 +3,7 @@
 
 #include "raycast/raycastMap.h"
 #include "raycast/raycastObject.h"
+#include "raycast/raycastObjectMap.h"
 #include "raycast/raycastPlayer.h"
 #include "raycast/raycastTexture.h"
 #include "raycast/raycastTextureMap.h"

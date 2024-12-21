@@ -35,6 +35,7 @@ int main(int argc, char* argv[]) {
 		raycastMap map = raycastMap();
 		raycastPlayer player = raycastPlayer();
 		raycastTextureMap* textureMap = NULL;
+		raycastObjectMap* objectMap = NULL;
 
 		// load lvl file
 		char* filename = (char*)malloc(FILENAME_MAX);
@@ -45,7 +46,7 @@ int main(int argc, char* argv[]) {
 			exit(1);
 		}else{
 			if(SDL_strstr(filename, ".lvl") != NULL){
-				raycast_loadFile(&map, &player, &textureMap, filename);
+				raycast_loadFile(&map, &player, &textureMap, &objectMap, filename);
 			}else{
 				printf("not .lvl file\n");
 				exit(1);
@@ -54,11 +55,8 @@ int main(int argc, char* argv[]) {
 		free(filename);
 
 		// Objects
-		std::vector<raycastObject> objectVector;
+		// std::vector<raycastObject> objectVector;
 		// objectVector.push_back(raycastObject(renderer, vect2d(3,3), FLOWER_PATH));
-
-		// Textures
-		// textureMap.push_back(raycastTexture(WALL_TEXUTRE_PATH, rgba32(0,15,255)));
 
 		while(!in.quit){
 			// Frame Timer
@@ -79,8 +77,9 @@ int main(int argc, char* argv[]) {
 				map.drawMap( renderer, player );
 			
 			// Draw Objects (very fast)
-			for(unsigned int i = 0; i < objectVector.size(); i++){
-				objectVector[i].drawObject(renderer, player, map);
+			if(objectMap != NULL)
+			for(unsigned int i = 0; i < objectMap->size(); i++){
+				objectMap->at(i)->drawObject(renderer, player, map);
 			}
 
 			SDL_RenderPresent( renderer );

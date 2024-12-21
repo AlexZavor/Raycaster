@@ -4,7 +4,7 @@
 #include "raycast/raycastMap.h"
 #include "raycast/raycastPlayer.h"
 
-void calcRay(raycastPlayer player, raycastMap* map, 
+static void calcRay(raycastPlayer player, raycastMap* map, 
 			 vect2d rayDir, float* dist, rgba32* target, bool* side, float* xDist = NULL){
 	vect2d mapTile = vect2d((int)player.pos.x, (int)player.pos.y); //truncate to get start tile. 
 
